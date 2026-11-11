@@ -1,0 +1,11 @@
+// The landing page in `site/`, served by Cloudflare Workers as static assets with no Worker
+// script. `.github/workflows/site.yml` runs `pnpm site:build`, then `wrangler deploy`, which
+// uploads `site/dist` and attaches the custom domain. Missing paths get `site/404.html`.
+{
+  "name": "nibble-site",
+  "compatibility_date": "2026-11-11",
+  "assets": { "directory": "./site/dist", "not_found_handling": "404-page" },
+  // Served only at the custom domain, not also at a workers.dev address.
+  "workers_dev": false,
+  "routes": [{ "pattern": "nibble.tonytang.dev", "custom_domain": true }],
+}

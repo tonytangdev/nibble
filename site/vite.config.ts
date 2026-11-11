@@ -27,7 +27,7 @@ function serveAppIcons(): Plugin {
 /**
  * Replaces each `<!-- design:nibble-sleepy.svg -->` comment in the page with that drawing
  * from `design/`, so the built page is plain HTML whose mascot parts CSS can animate, with
- * no script at runtime. Ids get a per-use suffix so a drawing can appear twice, and black
+ * no script for the drawings. Ids get a per-use suffix so a drawing can appear twice, and black
  * becomes `currentColor` so the menu bar icons follow the text colour.
  */
 function inlineDesignSvg(): Plugin {
@@ -59,5 +59,15 @@ export default defineConfig({
   clearScreen: false,
   // The popover's dev server owns 5173.
   server: { port: 5174, strictPort: true, fs: { allow: [".."] } },
-  build: { outDir: "dist", emptyOutDir: true },
+  build: {
+    outDir: "dist",
+    emptyOutDir: true,
+    rolldownOptions: {
+      input: {
+        index: fileURLToPath(new URL("index.html", import.meta.url)),
+        // Served by the host for any missing path.
+        notFound: fileURLToPath(new URL("404.html", import.meta.url)),
+      },
+    },
+  },
 });

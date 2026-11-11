@@ -15,40 +15,32 @@
   --body: "Public Sans Variable", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
 
-  /* What the page is painted with; the dark scheme swaps these and nothing else. */
-  --bg: oklch(0.975 0.018 95);
-  --surface: var(--cream);
-  --text: var(--ink);
-  --soft: oklch(0.17 0.022 200 / 0.72);
-  --line: oklch(0.17 0.022 200 / 0.13);
-  --wash: oklch(0.42 0.085 197 / 0.1);
-  --accent: var(--teal);
-  --accent-strong: var(--teal-deep);
-  --on-accent: var(--cream);
-  --stage: oklch(0.925 0.04 95);
-  --stage-sleepy: oklch(0.915 0.03 215);
-  --stage-hungry: oklch(0.925 0.035 40);
-  --shadow: 0 18px 40px -18px oklch(0.17 0.022 200 / 0.35);
+  /* What the page is painted with: each pair is the light value, then the dark one.
+     `color-scheme` picks between them, so the theme toggle only has to set that. */
+  --bg: light-dark(oklch(0.975 0.018 95), oklch(0.17 0.018 200));
+  --surface: light-dark(var(--cream), oklch(0.215 0.02 200));
+  --text: light-dark(var(--ink), var(--cream));
+  --soft: light-dark(oklch(0.17 0.022 200 / 0.72), oklch(0.96 0.025 95 / 0.72));
+  --line: light-dark(oklch(0.17 0.022 200 / 0.13), oklch(0.96 0.025 95 / 0.14));
+  --wash: light-dark(oklch(0.42 0.085 197 / 0.1), oklch(0.68 0.095 195 / 0.14));
+  --accent: light-dark(var(--teal), oklch(0.68 0.095 195));
+  --accent-strong: light-dark(var(--teal-deep), oklch(0.8 0.08 195));
+  --on-accent: light-dark(var(--cream), var(--ink));
+  --stage: light-dark(oklch(0.925 0.04 95), oklch(0.3 0.03 200));
+  --stage-sleepy: light-dark(oklch(0.915 0.03 215), oklch(0.29 0.04 235));
+  --stage-hungry: light-dark(oklch(0.925 0.035 40), oklch(0.31 0.035 40));
+  --shadow: 0 18px 40px -18px light-dark(oklch(0.17 0.022 200 / 0.35), oklch(0 0 0 / 0.7));
 
+  /* The system's choice, unless the visitor picked one with the toggle. */
   color-scheme: light dark;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: oklch(0.17 0.018 200);
-    --surface: oklch(0.215 0.02 200);
-    --text: var(--cream);
-    --soft: oklch(0.96 0.025 95 / 0.72);
-    --line: oklch(0.96 0.025 95 / 0.14);
-    --wash: oklch(0.68 0.095 195 / 0.14);
-    --accent: oklch(0.68 0.095 195);
-    --accent-strong: oklch(0.8 0.08 195);
-    --on-accent: var(--ink);
-    --stage: oklch(0.3 0.03 200);
-    --stage-sleepy: oklch(0.29 0.04 235);
-    --stage-hungry: oklch(0.31 0.035 40);
-    --shadow: 0 18px 40px -18px oklch(0 0 0 / 0.7);
-  }
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 *,
@@ -210,6 +202,7 @@ a:hover {
 
 .top nav {
   display: flex;
+  align-items: center;
   gap: clamp(0.9rem, 3vw, 1.6rem);
   font: 500 0.8rem/1.4 var(--mono);
 }
@@ -223,6 +216,55 @@ a:hover {
 .top nav a:hover {
   color: var(--accent-strong);
   text-decoration: underline;
+}
+
+/* Theme toggle. Hidden until the page's script runs, so without script there is no button
+   that does nothing. The icon shows the theme a click switches to. */
+.theme-toggle {
+  display: none;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: none;
+  color: var(--soft);
+  cursor: pointer;
+}
+
+:root.can-toggle-theme .theme-toggle {
+  display: inline-grid;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent-strong);
+  color: var(--accent-strong);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.theme-toggle .sun,
+:root[data-theme="dark"] .theme-toggle .moon {
+  display: none;
+}
+
+.theme-toggle .moon,
+:root[data-theme="dark"] .theme-toggle .sun {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-toggle .sun {
+    display: block;
+  }
+
+  :root:not([data-theme="light"]) .theme-toggle .moon {
+    display: none;
+  }
 }
 
 /* Hero */
@@ -289,36 +331,110 @@ a:hover {
 /* The scene: a slice of desktop with the menu bar and nibble's popover open under it. */
 .scene {
   justify-self: center;
-  width: min(24rem, 100%);
+  width: min(29rem, 100%);
 }
 
+/* A corner of a Mac desktop: the menu bar across the top, and nibble's window just under its
+   icon, centred on it, as the app places it. The status items have fixed sizes so the
+   window's offset from the right edge can be worked out: --tray-center is the distance from
+   the desk's right edge to the middle of nibble's icon. */
 .desk {
-  padding-bottom: 1.25rem;
+  --pad: 12px;
+  --gap: 14px;
+  --clock: 92px;
+  --popover-width: 312px;
+  --tray-center: calc(
+    var(--pad) + var(--clock) + var(--gap) + 25px + var(--gap) + 16px + var(--gap) + 15px
+  );
+
+  padding-bottom: 1.5rem;
   border-radius: 18px;
   border: 1px solid var(--line);
-  background: var(--stage);
+  background:
+    radial-gradient(
+      120% 80% at 85% 0%,
+      light-dark(oklch(0.86 0.06 197), oklch(0.36 0.07 200)),
+      transparent 70%
+    ),
+    radial-gradient(
+      90% 70% at 0% 100%,
+      light-dark(oklch(0.9 0.07 92), oklch(0.27 0.05 92)),
+      transparent 70%
+    ),
+    var(--stage);
   overflow: hidden;
 }
 
 .menubar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  height: 30px;
-  padding-inline: 0.75rem;
-  font: 500 12.5px/1 var(--body);
-  background: oklch(1 0 0 / 0.4);
-  border-bottom: 1px solid var(--line);
+  justify-content: space-between;
+  gap: var(--gap);
+  height: 28px;
+  padding-inline: var(--pad);
+  font: 500 12px/1 var(--body);
+  white-space: nowrap;
+  background: light-dark(oklch(1 0 0 / 0.55), oklch(0.12 0.01 200 / 0.55));
+  backdrop-filter: blur(12px);
+  box-shadow: 0 1px 0 var(--line);
 }
 
+.menus {
+  display: flex;
+  gap: 13px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.menus b {
+  font-weight: 700;
+}
+
+.status {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--gap);
+}
+
+.wifi,
+.battery {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+}
+
+.wifi {
+  width: 16px;
+  height: 12px;
+  stroke-width: 1.7;
+}
+
+.battery {
+  width: 25px;
+  height: 12px;
+  stroke-width: 1;
+}
+
+.battery .charge {
+  fill: currentColor;
+  stroke: none;
+}
+
+.clock {
+  width: var(--clock);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Highlighted, as macOS shows a menu bar item whose window is open. */
 .tray {
   display: grid;
   place-items: center;
   width: 30px;
   height: 22px;
   border-radius: 5px;
-  background: var(--line);
+  background: color-mix(in oklch, var(--text) 16%, transparent);
 }
 
 .tray svg {
@@ -327,14 +443,16 @@ a:hover {
 }
 
 .popover {
-  width: min(340px, 100% - 1.5rem);
-  margin: 7px 0.75rem 0 auto;
+  width: min(var(--popover-width), 100% - 2 * var(--pad));
+  margin: 6px max(var(--pad), var(--tray-center) - var(--popover-width) / 2) 0 auto;
   font-size: 14px;
   line-height: 1.45;
   background: var(--surface);
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid var(--line);
-  box-shadow: var(--shadow);
+  box-shadow:
+    var(--shadow),
+    0 2px 6px -2px oklch(0 0 0 / 0.2);
   overflow: hidden;
 }
 
@@ -416,7 +534,7 @@ a:hover {
 .eaten {
   position: absolute;
   inset: 0 auto 0 0;
-  width: 68%;
+  width: 40%;
   background: var(--accent);
   animation: eat 900ms 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -696,6 +814,27 @@ figcaption {
   max-width: 38rem;
   margin-top: 0.9rem;
   color: var(--soft);
+}
+
+/* 404 */
+.lost {
+  display: grid;
+  gap: clamp(2rem, 5vw, 3.5rem);
+  align-items: center;
+  padding-block: clamp(2.5rem, 8vw, 6rem);
+}
+
+@media (min-width: 48rem) {
+  .lost {
+    grid-template-columns: 18rem minmax(0, 1fr);
+  }
+}
+
+.lost .stage {
+  height: 15rem;
+  padding: 1.5rem 0 1.25rem;
+  border-radius: 18px;
+  background: var(--stage-hungry);
 }
 
 .bottom {
