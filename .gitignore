@@ -1,3 +1,7 @@
 /target
 node_modules/
 .DS_Store
+
+# Tauri generated schemas
+crates/nibble-app/gen
+ui/dist

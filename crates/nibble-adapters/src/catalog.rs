@@ -11,7 +11,16 @@ pub struct JsonCatalog {
     json: String,
 }
 
+/// The catalog shipped inside the app, verified against Provider pricing pages.
+const BUNDLED: &str = include_str!("../data/catalog.json");
+
 impl JsonCatalog {
+    /// The catalog shipped inside the app.
+    #[must_use]
+    pub fn bundled() -> Self {
+        Self::new(BUNDLED)
+    }
+
     /// A catalog over `json`, parsed on each read.
     #[must_use]
     pub fn new(json: &str) -> Self {

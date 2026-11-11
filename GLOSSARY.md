@@ -13,11 +13,11 @@ One paid seat with one Provider, on one Plan, renewing every Billing cycle.
 _Avoid_: account, membership
 
 **Plan**:
-A Provider's named subscription offering with a list price and a usage capacity, e.g. Pro, Max 5×, Max 20×.
+A Provider's named subscription offering with a list price and a usage capacity, e.g. Pro, Max, Ultra.
 _Avoid_: tier (in prose), package
 
 **Capacity**:
-A Plan's usage allowance relative to the Provider's smallest paid Plan; Pro is 1, Max 5× is 5.
+A Plan's usage allowance relative to the Provider's smallest paid Plan; Pro is 1, Max is 5, Ultra is 10.
 _Avoid_: multiplier (reserved), quota
 
 **Plan price**:

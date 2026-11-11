@@ -5,6 +5,10 @@ all-features = true
 [advisories]
 version = 2
 yanked = "deny"
+# Vulnerabilities fail at any depth. "Unmaintained" only fails for our direct dependencies:
+# Tauri's Linux stack (zbus/zvariant via notifications, proc-macro-error via GTK) is out of
+# our hands and gets updated with Tauri.
+unmaintained = "workspace"
 
 [licenses]
 version = 2

@@ -40,6 +40,12 @@ impl SubscriptionId {
     pub fn new(id: impl Into<String>) -> Self {
         Self(id.into())
     }
+
+    /// The identifier as text.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
 }
 
 /// The day of the month a Billing cycle starts, 1 to 31.

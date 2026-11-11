@@ -1,0 +1,165 @@
+/* Brand tokens from tonytang.dev DESIGN.md. Yellow is a signal: cheese and pupils only. */
+:root {
+  --teal: oklch(0.42 0.085 197);
+  --teal-deep: oklch(0.34 0.08 202);
+  --cream: oklch(0.96 0.025 95);
+  --ink: oklch(0.17 0.022 200);
+  --ink-soft: oklch(0.17 0.022 200 / 0.62);
+  --line: oklch(0.17 0.022 200 / 0.12);
+  --display: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  --body: "Public Sans Variable", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  color: var(--ink);
+  font: 14px/1.45 var(--body);
+}
+
+html,
+body {
+  margin: 0;
+  background: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+.card {
+  box-sizing: border-box;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px 14px;
+  background: var(--cream);
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.mascot {
+  height: 132px;
+  align-self: center;
+}
+
+h1 {
+  margin: 0;
+  font: 600 20px/1.2 var(--display);
+}
+
+.mono {
+  font-family: var(--mono);
+  font-weight: 500;
+}
+
+.lede {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.amount {
+  margin: 0;
+  font-size: 22px;
+}
+
+.amount .of {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.multiplier {
+  margin-left: 8px;
+  padding: 1px 7px;
+  font-size: 13px;
+  border-radius: 999px;
+  border: 1.5px solid var(--teal);
+  color: var(--teal-deep);
+}
+
+.bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.bar > div {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--teal);
+}
+
+.meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.error {
+  color: oklch(0.5 0.15 30);
+}
+
+.suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: oklch(1 0 0 / 0.5);
+}
+
+.suggestion p {
+  margin: 0;
+}
+
+button {
+  align-self: flex-start;
+  padding: 4px 12px;
+  font: 500 13px var(--body);
+  color: var(--teal-deep);
+  background: none;
+  border: 1.5px solid var(--teal);
+  border-radius: 999px;
+}
+
+button:hover {
+  background: oklch(0.42 0.085 197 / 0.08);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--teal);
+}
+
+footer {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* The break-even moment: the only place the full teal background appears. */
+.celebrate {
+  background: var(--teal);
+  color: var(--cream);
+  justify-content: center;
+  text-align: center;
+}
+
+.celebrate .lede {
+  color: oklch(0.96 0.025 95 / 0.8);
+}
+
+.celebrate .primary {
+  align-self: center;
+  color: var(--teal-deep);
+  background: var(--cream);
+  border-color: var(--cream);
+}

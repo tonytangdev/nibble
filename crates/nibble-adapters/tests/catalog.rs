@@ -37,3 +37,27 @@ fn a_malformed_price_is_an_error() {
 
     assert!(JsonCatalog::new(&broken).catalog().is_err());
 }
+
+#[test]
+fn the_bundled_catalog_prices_every_individual_claude_plan() {
+    let catalog = JsonCatalog::bundled().catalog().unwrap();
+
+    let capacities: Vec<_> = ["pro", "max_5x", "max_20x"]
+        .iter()
+        .map(|id| {
+            catalog
+                .plans
+                .iter()
+                .find(|p| p.id == PlanId::new(*id))
+                .map(|p| p.capacity)
+        })
+        .collect();
+    // Anthropic now sells max_20x as "Ultra", described as 10x Pro (claude.com/pricing, 2026-11-11).
+    assert_eq!(capacities, vec![Some(1), Some(5), Some(10)]);
+    assert!(
+        catalog
+            .models
+            .iter()
+            .any(|m| "claude-opus-5-5".starts_with(&m.model_prefix))
+    );
+}

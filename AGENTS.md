@@ -18,7 +18,7 @@ Dependencies point inward. The crate boundaries enforce this, so the compiler re
 
 - `crates/nibble-core`: the domain (plans, usage, pricing, break-even, mood) and the **ports** (traits for anything outside: each Provider's usage and account, the price catalog). It stays pure: no file system, network, environment or wall clock. The current time arrives as a value in `Inputs`. Its own `clippy.toml` bans those APIs. When that lint fires, add a port.
 - `crates/nibble-adapters`: implements the ports, for example the Claude Code log reader. It depends on core, never the other way round.
-- The app shell (Tauri v2, not scaffolded yet) connects the adapters to core and renders the UI. It contains no business logic.
+- `crates/nibble-app`: the Tauri v2 shell. It connects the adapters to core, draws the tray icon and serves the popover (React, in `ui/`) a JSON `View`. It contains no business logic: React only words and draws what the `View` says.
 
 Claude Code is the first provider. OpenAI and running several subscriptions at once are planned, so model the provider and the subscription as domain concepts and keep Claude out of core's types. Build core logic test-first.
 

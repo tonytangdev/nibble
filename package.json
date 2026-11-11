@@ -3,19 +3,44 @@
   "private": true,
   "packageManager": "pnpm@12.18.0",
   "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "ui:dev": "vite ui",
+    "ui:build": "vite build ui",
     "fmt": "cargo fmt --all && prettier --write .",
     "fmt:check": "cargo fmt --all --check && prettier --check .",
-    "lint": "cargo clippy --workspace --all-targets --all-features -- -D warnings",
+    "typecheck": "tsc",
+    "lint": "cargo clippy --workspace --all-targets --all-features -- -D warnings && eslint .",
     "test": "cargo test --workspace",
     "deny": "cargo deny check",
-    "check": "pnpm fmt:check && pnpm lint && pnpm test && pnpm deny",
+    "check": "pnpm fmt:check && pnpm typecheck && pnpm lint && pnpm test && pnpm deny",
     "prepare": "simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm fmt:check && pnpm lint"
+    "pre-commit": "pnpm fmt:check && pnpm typecheck && pnpm lint"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tauri-apps/cli": "^2.12.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "eslint": "^10.14.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
     "prettier": "^3.9.10",
-    "simple-git-hooks": "^2.14.0"
-  }
+    "simple-git-hooks": "^2.14.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^8.3.7"
+  },
+  "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource-variable/public-sans": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@tauri-apps/api": "^2.12.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "type": "module"
 }
