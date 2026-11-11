@@ -1,7 +1,8 @@
 # Releasing nibble
 
-A release is a signed, notarized, universal macOS app (Apple Silicon and Intel, macOS 13+) on a
-GitHub Release, plus the `latest.json` the in-app updater reads. Windows and Linux come later.
+A release is a signed, notarized macOS app for Apple Silicon (macOS 13+) on a
+GitHub Release, plus the `latest.json` the in-app updater reads. Intel Macs are not supported: v0.1.0 was the one universal build, and Intel Macs running it
+find no update for their platform. Windows and Linux come later.
 
 ## Once: signing secrets
 
@@ -38,7 +39,7 @@ and run the wizard again.
 
 ## Trying a build without the secrets
 
-Actions → **build** → Run workflow makes an unsigned universal `.dmg` as a workflow artifact,
+Actions → **build** → Run workflow makes an unsigned Apple Silicon `.dmg` as a workflow artifact,
 never a release. macOS blocks it as downloaded; open it with `xattr -cr /Applications/nibble.app`.
 
 Locally, `pnpm build` makes an unsigned build for your own Mac in `target/release/bundle/`.
