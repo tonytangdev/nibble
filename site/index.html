@@ -3,17 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>nibble: is your AI subscription paying for itself?</title>
+    <title>nibble: is your Claude Code subscription paying for itself? A menu bar app</title>
     <meta
       name="description"
-      content="nibble is a menu bar app that prices your AI usage at API rates and compares it with what your subscription costs. For now it counts Claude Code, from its local logs."
+      content="nibble is a menu bar app, macOS first, that prices your Claude Code usage at API rates and compares it with what your subscription costs. It reads Claude Code’s local logs, so your usage stays on your computer."
     />
+    <!-- Search engines and link previews need absolute URLs here, so they name the live site
+         even when the build is served elsewhere. og.png has a fixed name, from public/, so
+         links shared before a rebuild keep their picture; social-preview.html is its source. -->
+    <link rel="canonical" href="https://nibble.tonytang.dev/" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="nibble: is your AI subscription paying for itself?" />
+    <meta property="og:site_name" content="nibble" />
+    <meta property="og:url" content="https://nibble.tonytang.dev/" />
+    <meta
+      property="og:title"
+      content="nibble: is your Claude Code subscription paying for itself?"
+    />
     <meta
       property="og:description"
-      content="A menu bar app that prices your AI usage at API rates and compares it with what your subscription costs."
+      content="A menu bar app that prices your Claude Code usage at API rates and compares it with what your subscription costs."
     />
+    <meta property="og:image" content="https://nibble.tonytang.dev/og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="640" />
+    <meta
+      property="og:image:alt"
+      content="nibble: is your Claude Code subscription paying for itself? Beside the question, nibble’s popover under its cheese wedge in the menu bar, with nibble the mouse nibbling a wedge of cheese: Claude Code this week, at API rates, $9.30 of $23.08, 40% paid off."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- WebSite names the site in search results; without it on this subdomain, Google may
+         use tonytang.dev's name. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "nibble",
+        "alternateName": ["nibble app", "nibble.tonytang.dev"],
+        "url": "https://nibble.tonytang.dev/"
+      }
+    </script>
+    <!-- release:software-application -->
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#f8f3e3" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0d1718" media="(prefers-color-scheme: dark)" />
@@ -104,7 +134,7 @@
     <main id="main">
       <section class="hero wrap">
         <div class="pitch">
-          <h1>Is your AI subscription paying for itself?</h1>
+          <h1>Is your Claude Code subscription paying for itself?</h1>
           <p class="lede">
             nibble lives in your menu bar. It prices your AI usage at API rates and compares that
             with what your subscription costs. nibble, a cheese-loving mouse, eats through a wedge

@@ -1,0 +1,123 @@
+<!doctype html>
+<!-- The source of `public/og.png`, the 1280×640 picture shown when someone shares the page
+     (Open Graph, X, and GitHub's repository preview). The build leaves this page out. To
+     redraw the picture: `pnpm site:dev`, open /social-preview.html in a 1280×640 viewport, and
+     save a screenshot of it, at a device scale of 1, as `site/public/og.png`. It uses the
+     page's own stylesheet and drawings, in the light theme. Keep its words true of the app. -->
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="robots" content="noindex" />
+    <title>nibble social preview</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      html,
+      body {
+        width: 1280px;
+        height: 640px;
+        overflow: hidden;
+      }
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+      .card {
+        display: grid;
+        grid-template-columns: 1fr 520px;
+        gap: 56px;
+        align-items: center;
+        height: 100%;
+        padding: 0 72px 0 80px;
+      }
+      .card .wordmark {
+        font-size: 2rem;
+        gap: 0.6rem;
+      }
+      .card .glyph svg {
+        width: 34px;
+        height: 34px;
+      }
+      .card h1 {
+        margin-top: 36px;
+        font-size: 4rem;
+      }
+      .card .lede {
+        margin-top: 28px;
+        max-width: 30rem;
+        font-size: 1.45rem;
+        line-height: 1.4;
+      }
+      .card .host {
+        margin-top: 36px;
+        font: 500 1.05rem/1 var(--mono);
+        color: var(--soft);
+      }
+      .card .scene {
+        width: 520px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div>
+        <p class="wordmark">
+          <span class="glyph"><!-- design:menubar/wedge-100.svg --></span>
+          nibble
+        </p>
+        <h1>Is your Claude Code subscription paying for itself?</h1>
+        <p class="lede">A menu bar app that prices your usage at API rates.</p>
+        <p class="host">nibble.tonytang.dev</p>
+      </div>
+
+      <!-- The page's hero, with its example figures (see index.html). -->
+      <figure class="scene">
+        <div class="desk">
+          <div class="menubar">
+            <span class="menus"
+              ><b>Code</b><span>File</span><span>Edit</span><span>View</span></span
+            >
+            <span class="status">
+              <span class="tray"><!-- design:menubar/wedge-66.svg --></span>
+              <svg class="wifi" viewBox="0 0 16 12" aria-hidden="true">
+                <path
+                  d="M1 4.2a10 10 0 0 1 14 0M3.4 6.7a6.5 6.5 0 0 1 9.2 0M5.8 9.1a3 3 0 0 1 4.4 0"
+                />
+              </svg>
+              <svg class="battery" viewBox="0 0 25 12" aria-hidden="true">
+                <rect x="0.5" y="0.5" width="21" height="11" rx="3" />
+                <rect class="charge" x="2.5" y="2.5" width="13" height="7" rx="1.5" />
+                <path d="M23.5 4.5v3" />
+              </svg>
+              <span class="clock">Fri Nov 13 9:41</span>
+            </span>
+          </div>
+          <div class="popover">
+            <div class="stage">
+              <span class="chip">Max</span>
+              <div class="mascot mood-nibbling"><!-- design:nibble-nibbling.svg --></div>
+            </div>
+            <div class="body">
+              <p class="headline">Nibbling through Max</p>
+              <p class="label">Claude Code this week, at API rates</p>
+              <p class="figure">
+                <span class="value">$9.30</span>
+                <span class="share">of $23.08</span>
+              </p>
+              <div class="cheese"><div class="eaten"></div></div>
+              <p class="meta">
+                <span>40% paid off</span>
+                <span>Resets Nov 16 · 3 days left</span>
+              </p>
+            </div>
+            <div class="foot">
+              <span>Buy me a coffee</span>
+              <span>More apps</span>
+            </div>
+          </div>
+        </div>
+      </figure>
+    </div>
+  </body>
+</html>

@@ -1,8 +1,11 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { defineConfig, type Plugin } from "vite";
 
+/** Where the page lives. Search engines and link previews need absolute URLs. */
+const site = "https://nibble.tonytang.dev/";
 const repo = fileURLToPath(new URL("../", import.meta.url));
 const design = `${repo}design/`;
 
@@ -70,6 +73,7 @@ interface Download {
 
 interface Release {
   version: string;
+  published: Date;
   downloads: Download[];
 }
 
@@ -115,6 +119,7 @@ async function latestRelease(): Promise<Release> {
   if (!response.ok) throw new Error(`GitHub answered ${String(response.status)}`);
   const body = (await response.json()) as {
     tag_name: string;
+    published_at: string;
     assets: { name: string; browser_download_url: string; size: number }[];
   };
   const downloads: Download[] = [];
@@ -129,7 +134,11 @@ async function latestRelease(): Promise<Release> {
       size: asset.size,
     });
   }
-  return { version: body.tag_name.replace(/^v/, ""), downloads };
+  return {
+    version: body.tag_name.replace(/^v/, ""),
+    published: new Date(body.published_at),
+    downloads,
+  };
 }
 
 function escapeHtml(text: string): string {
@@ -171,10 +180,67 @@ function downloadList(release: Release | null): string {
 }
 
 /**
+ * schema.org `SoftwareApplication` data for the page, as a JSON-LD script. It describes the
+ * app with what the page shows, and takes the version, systems and files from the release, so
+ * it stays true. No rating or review: nibble has none, and inventing one breaks Google's rules.
+ * Without a release, it leaves those out.
+ */
+function softwareApplication(release: Release | null, description: string): string {
+  const files = release?.downloads ?? [];
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "nibble",
+    description,
+    url: site,
+    applicationCategory: "DeveloperApplication",
+    ...(release && {
+      softwareVersion: release.version,
+      operatingSystem: systems
+        .filter(({ os }) => files.some((download) => download.os === os))
+        .map(({ name }) => name)
+        .join(", "),
+      downloadUrl: files.map((download) => download.url),
+    }),
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    license: "https://github.com/tonytangdev/nibble/blob/main/LICENSE",
+    author: { "@type": "Person", name: "Tony Tang", url: "https://tonytang.dev" },
+  };
+  // `<` escaped, so no text in the data can close the script element.
+  const json = JSON.stringify(data, null, 2).replaceAll("<", "\\u003c");
+  return `<script type="application/ld+json">\n${json}\n</script>`;
+}
+
+/** When the page last changed: its latest commit, or the release it lists, whichever is later. */
+function lastModified(release: Release | null): Date {
+  let commit = new Date();
+  try {
+    commit = new Date(
+      execFileSync("git", ["log", "-1", "--format=%cI"], { encoding: "utf8" }).trim(),
+    );
+  } catch {
+    console.warn("nibble: no git history, so the sitemap's lastmod is today.");
+  }
+  return release && release.published > commit ? release.published : commit;
+}
+
+function sitemap(release: Release | null): string {
+  const date = lastModified(release).toISOString().slice(0, 10);
+  return (
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    `  <url><loc>${site}</loc><lastmod>${date}</lastmod></url>\n` +
+    `</urlset>\n`
+  );
+}
+
+/**
  * Lists the files of nibble's latest release, by system, where the page has
  * `<!-- release:downloads -->`, and points each `href="release:default"` at the first macOS
  * file: the right one for a visitor without scripts, as macOS comes first. The page's script
- * repoints it for other systems. Pushes to main and each published release rebuild the page.
+ * repoints it for other systems. Puts the page's `SoftwareApplication` data where it has
+ * `<!-- release:software-application -->`, and writes `sitemap.xml`, dated from the latest
+ * commit or release. Pushes to main and each published release rebuild the page.
  * Without GitHub, a local build links to the releases page instead; in CI it fails, so the
  * live page keeps its list.
  */
@@ -194,10 +260,18 @@ function releaseDownloads(): Plugin {
         if (!html.includes("release:")) return html;
         const latest = await load();
         const first = latest?.downloads.find((download) => download.os === "macos");
+        const description = /<meta\s+name="description"\s+content="([^"]*)"/.exec(html)?.[1] ?? "";
         return html
           .replace(/<!--\s*release:downloads\s*-->/g, downloadList(latest))
+          .replace(
+            /<!--\s*release:software-application\s*-->/g,
+            softwareApplication(latest, description),
+          )
           .replaceAll('href="release:default"', `href="${escapeHtml(first?.url ?? "#download")}"`);
       },
+    },
+    async generateBundle() {
+      this.emitFile({ type: "asset", fileName: "sitemap.xml", source: sitemap(await load()) });
     },
   };
 }
