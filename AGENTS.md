@@ -26,6 +26,10 @@ The work is done when `pnpm check` passes. It runs the formatters, clippy, the t
 
 To work on the popover's look without the Rust build, run `pnpm ui:dev` and open it in a browser. Outside Tauri it shows the sample Views in `ui/src/preview.ts`, picked with `?state=`, e.g. `http://localhost:5173/?state=paidOff`.
 
+## The website
+
+`site/` is nibble's landing page: one static page (`index.html`, `styles.css`) with no script at runtime, built by Vite and independent of the app and the crates. It reuses the popover's fonts and tokens, and `site/vite.config.ts` inlines the drawings from `design/` at build time. `pnpm site:dev` serves it on port 5174 and `pnpm site:build` writes `site/dist`, which works at a domain root or under a sub-path. Whatever the page says about nibble must be true of the app today; when the app's behaviour or the Price catalog changes, update the page.
+
 ## Facts and licensing
 
 - Check plan prices and API rates against the provider's own pricing pages, and record the source URL and the date next to the data.

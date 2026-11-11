@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>nibble: is your AI subscription paying for itself?</title>
+    <meta
+      name="description"
+      content="nibble is a menu bar app that prices your AI usage at API rates and compares it with what your subscription costs. For now it counts Claude Code, from its local logs."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="nibble: is your AI subscription paying for itself?" />
+    <meta
+      property="og:description"
+      content="A menu bar app that prices your AI usage at API rates and compares it with what your subscription costs."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f8f3e3" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d1718" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" href="../crates/nibble-app/icons/64x64.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="top wrap">
+      <a class="wordmark" href="./" aria-label="nibble, home">
+        <span class="glyph"><!-- design:menubar/wedge-100.svg --></span>
+        nibble
+      </a>
+      <nav aria-label="Site">
+        <a href="#how">How it works</a>
+        <a href="#download">Download</a>
+        <a href="https://github.com/tonytangdev/nibble">GitHub</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero wrap">
+        <div class="pitch">
+          <h1>Is your AI subscription paying for itself?</h1>
+          <p class="lede">
+            nibble lives in your menu bar. It prices your AI usage at API rates and compares that
+            with what your subscription costs. nibble, a cheese-loving mouse, eats through a wedge
+            as your usage adds up.
+          </p>
+          <div class="cta">
+            <a class="button primary" href="https://github.com/tonytangdev/nibble/releases/latest">
+              Download nibble
+            </a>
+            <a class="button" href="https://github.com/tonytangdev/nibble">View on GitHub</a>
+          </div>
+          <p class="fine">Free and open source. For now, nibble counts Claude Code only.</p>
+        </div>
+
+        <!-- Example figures. The share is the Max plan's list price spread over the weeks of
+             a year: $100 × 12 ÷ 52 = $23.08. Plan price from https://claude.com/pricing,
+             retrieved 2026-11-11 (crates/nibble-adapters/data/catalog.json). -->
+        <figure class="scene">
+          <div
+            class="desk"
+            role="img"
+            aria-label="An example of nibble's popover, open under its cheese wedge icon in the menu bar. nibble the mouse is nibbling a wedge of cheese. Nibbling through Max. Claude Code this week, at API rates: $15.70 of $23.08, 68% paid off."
+          >
+            <div class="menubar">
+              <span class="tray"><!-- design:menubar/wedge-33.svg --></span>
+              <span>Fri 9:41</span>
+            </div>
+            <div class="popover">
+              <div class="stage">
+                <span class="chip">Max</span>
+                <div class="mascot mood-nibbling"><!-- design:nibble-nibbling.svg --></div>
+              </div>
+              <div class="body">
+                <p class="headline">Nibbling through Max</p>
+                <p class="label">Claude Code this week, at API rates</p>
+                <p class="figure">
+                  <span class="value">$15.70</span>
+                  <span class="share">of $23.08</span>
+                </p>
+                <div class="cheese"><div class="eaten"></div></div>
+                <p class="meta">
+                  <span>68% paid off</span>
+                  <span>Resets Nov 16 · 3 days left</span>
+                </p>
+              </div>
+              <div class="foot">
+                <span>Buy me a coffee</span>
+                <span>More apps</span>
+              </div>
+            </div>
+          </div>
+          <figcaption>
+            An example reading. Max lists at $100 a month, which comes to $23.08 a week.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section id="how" class="wrap block">
+        <p class="kicker">How it works</p>
+        <h2>Three small steps, all on your computer</h2>
+        <ol class="steps">
+          <li>
+            <h3>It reads the logs</h3>
+            <p>
+              Claude Code keeps a record of every response on your computer. nibble reads those logs
+              where they are, so your usage never leaves your machine. It picks up your plan from
+              Claude Code too.
+            </p>
+          </li>
+          <li>
+            <h3>It prices the tokens</h3>
+            <p>
+              Each response is priced at the API rate for its model. Input, output and cached tokens
+              each have their own rate. The total is your API value: what the same work would have
+              cost pay-as-you-go.
+            </p>
+          </li>
+          <li>
+            <h3>It compares that with your plan</h3>
+            <p>
+              Your plan’s monthly price is spread evenly over the weeks of a year. When this week’s
+              API value passes that weekly share, the plan has paid for itself, and nibble tells you
+              by how much.
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="wrap block">
+        <p class="kicker">The mascot</p>
+        <h2>One mouse, four moods</h2>
+        <p class="intro">
+          nibble reads your subscription and tells you how it looks. It speaks up both ways: when a
+          cheaper option would do, and when you need more room.
+        </p>
+        <ul class="moods">
+          <li>
+            <div class="stage">
+              <div
+                class="mascot mood-nibbling"
+                role="img"
+                aria-label="nibble eating a wedge of cheese"
+              >
+                <!-- design:nibble-nibbling.svg -->
+              </div>
+            </div>
+            <h3>Nibbling</h3>
+            <p>
+              The everyday mood. Your usage is adding up and the week is on its way to paying off.
+            </p>
+          </li>
+          <li class="paid">
+            <div class="stage">
+              <div
+                class="mascot mood-paidOff"
+                role="img"
+                aria-label="nibble celebrating with its arms up"
+              >
+                <!-- design:nibble-paid-off.svg -->
+              </div>
+            </div>
+            <h3>Paid off</h3>
+            <p>
+              This week’s usage is worth more than the week costs. nibble celebrates and shows a
+              multiplier, like 1.4×.
+            </p>
+          </li>
+          <li class="sleepy">
+            <div class="stage">
+              <div class="mascot mood-sleepy" role="img" aria-label="nibble dozing off">
+                <!-- design:nibble-sleepy.svg -->
+              </div>
+            </div>
+            <h3>Sleepy</h3>
+            <p>
+              A smaller plan, or paying the API directly, would have covered your last 30 days.
+              nibble suggests the cheaper option.
+            </p>
+          </li>
+          <li class="hungry">
+            <div class="stage">
+              <div
+                class="mascot mood-stillHungry"
+                role="img"
+                aria-label="nibble holding an empty plate"
+              >
+                <!-- design:nibble-still-hungry.svg -->
+              </div>
+            </div>
+            <h3>Still hungry</h3>
+            <p>
+              You keep running into your limits. nibble suggests a bigger plan, when there is one.
+            </p>
+          </li>
+        </ul>
+
+        <div class="wedges">
+          <div>
+            <h3>In the menu bar</h3>
+            <p>
+              The wedge of cheese gets smaller as the week pays off. Once it has, you get an empty
+              wedge with a check and the multiplier next to it.
+            </p>
+          </div>
+          <ul aria-label="Menu bar icons">
+            <li><!-- design:menubar/wedge-100.svg --><span>Full</span></li>
+            <li><!-- design:menubar/wedge-66.svg --><span>Two-thirds</span></li>
+            <li><!-- design:menubar/wedge-33.svg --><span>One-third</span></li>
+            <li><!-- design:menubar/crumbs.svg --><span>Crumbs</span></li>
+            <li class="done">
+              <span class="pair"><!-- design:menubar/paid-off.svg --><b>1.2×</b></span>
+              <span>Paid off</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="wrap block counts">
+        <div>
+          <p class="kicker">The fine print</p>
+          <h2>What nibble counts, and what it doesn’t</h2>
+        </div>
+        <ul>
+          <li>
+            <strong>Claude Code only, for now.</strong> Usage comes from Claude Code’s logs on your
+            computer. Chats on claude.ai and in the desktop app leave no local record, so they are
+            not included. If you use those as well, your plan is worth more to you than nibble
+            shows.
+          </li>
+          <li>
+            <strong>Prices with their sources.</strong> API rates and plan prices come from
+            Anthropic’s own pricing pages and ship inside the app, each with its source and the date
+            it was checked.
+          </li>
+          <li>
+            <strong>No guessing.</strong> A response from a model nibble can’t price yet is counted
+            and mentioned, never given a made-up value.
+          </li>
+          <li>
+            <strong>More to come.</strong> Other providers are planned, and so is running several
+            subscriptions at once.
+          </li>
+        </ul>
+      </section>
+
+      <section id="download" class="wrap block">
+        <div class="get">
+          <img
+            src="../crates/nibble-app/icons/128x128@2x.png"
+            width="112"
+            height="112"
+            alt=""
+            loading="lazy"
+          />
+          <div class="get-text">
+            <p class="kicker">Download</p>
+            <h2>Put nibble in your menu bar</h2>
+            <p>macOS comes first. Windows and Linux too.</p>
+            <ul class="platforms">
+              <li>
+                <a
+                  class="button primary"
+                  href="https://github.com/tonytangdev/nibble/releases/latest"
+                  >Download for macOS</a
+                >
+              </li>
+              <li>
+                <a class="button" href="https://github.com/tonytangdev/nibble/releases/latest"
+                  >Windows</a
+                >
+              </li>
+              <li>
+                <a class="button" href="https://github.com/tonytangdev/nibble/releases/latest"
+                  >Linux</a
+                >
+              </li>
+            </ul>
+            <p class="fine">
+              Builds are published on
+              <a href="https://github.com/tonytangdev/nibble/releases/latest">GitHub Releases</a>.
+              If the one for your system isn’t there yet, it is on its way. You can also
+              <a href="https://github.com/tonytangdev/nibble#development"
+                >build nibble from source</a
+              >.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap block support">
+        <h2>nibble is free</h2>
+        <p>
+          If it is useful to you, you can
+          <a href="https://buymeacoffee.com/tonytangdev">buy me a coffee</a> ☕. You can find my
+          other apps at <a href="https://tonytang.dev/apps/">tonytang.dev/apps</a>.
+        </p>
+      </section>
+    </main>
+
+    <footer class="wrap bottom">
+      <p>
+        <a href="https://github.com/tonytangdev/nibble">Source on GitHub</a>
+        <a href="https://github.com/tonytangdev/nibble/blob/main/LICENSE">GPL-3.0-or-later</a>
+        <a href="https://tonytang.dev">tonytang.dev</a>
+      </p>
+      <p>nibble is an independent app. It is not affiliated with Anthropic.</p>
+    </footer>
+  </body>
+</html>

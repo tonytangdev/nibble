@@ -10,6 +10,7 @@ For now nibble measures Claude Code only, from its local logs. macOS comes first
 pnpm install
 pnpm dev      # run the app
 pnpm check    # formatters, lints, tests and licence checks
+pnpm site:dev # the landing page in site/, on port 5174
 ```
 
 ## Support

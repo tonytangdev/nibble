@@ -28,6 +28,7 @@ jobs:
       - run: pnpm fmt:check
       - run: pnpm lint
       - run: pnpm test
+      - run: pnpm site:build
 
   deny:
     runs-on: ubuntu-latest

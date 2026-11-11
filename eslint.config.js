@@ -6,7 +6,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig(
-  { ignores: ["ui/dist", "target", "crates/**/gen", "design"] },
+  { ignores: ["ui/dist", "site/dist", "target", "crates/**/gen", "design"] },
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,
