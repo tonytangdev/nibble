@@ -24,19 +24,24 @@ jobs:
       matrix:
         # Runner images are pinned, so an OS upgrade is a change we make, not one that happens to us.
         # These were what `*-latest` meant on 2026-11-11 (https://github.com/actions/runner-images).
-        os: ${{ fromJSON(inputs.macos-only && '["macos-26"]' || '["macos-26", "windows-2025", "ubuntu-24.04"]') }}
+        # Linux runs in a Debian container: its apt reads deb.debian.org, so the job does not
+        # depend on the Ubuntu mirrors GitHub's runners use, which go unreachable for hours.
+        include: ${{ fromJSON(inputs.macos-only && '[{"os":"macos-26"}]' || '[{"os":"macos-26"},{"os":"windows-2025"},{"os":"ubuntu-24.04","container":"rust:1-trixie"}]') }}
+    name: check (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
     # A normal run takes under 5 minutes; a stuck runner fails here instead of hanging for hours.
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - name: Install Tauri system libraries
         if: runner.os == 'Linux'
-        # When Ubuntu's package mirrors are unreachable, apt retries for an hour; fail fast.
+        # When the package mirrors are unreachable, apt retries for an hour; fail fast.
+        # Recommended packages (gstreamer plugins, pipewire, portals) are not needed to build.
         timeout-minutes: 5
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev
+          apt-get update
+          apt-get install -y --no-install-recommends pkg-config libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
