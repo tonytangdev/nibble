@@ -7,6 +7,7 @@ use chrono::{DateTime, Datelike, Utc};
 use nibble_core::{CycleAnchor, PlanId, ProviderId, SeatKind, Subscription, SubscriptionId};
 use serde_json::Value;
 
+use super::PROVIDER;
 use crate::history::StoredReading;
 
 /// The Subscription the signed-in account holds, if any.
@@ -30,7 +31,7 @@ pub(crate) fn subscription(config: &Value, provider: &ProviderId) -> Option<Subs
         .or_else(|| CycleAnchor::new(1))?;
     let account_id = text("accountUuid").unwrap_or("default");
     Some(Subscription {
-        id: SubscriptionId::new(format!("anthropic:{account_id}")),
+        id: SubscriptionId::new(format!("{PROVIDER}:{account_id}")),
         provider: provider.clone(),
         plan: PlanId::new(plan),
         price_override: None,

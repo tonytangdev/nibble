@@ -41,7 +41,7 @@ fn catalog() -> PriceCatalog {
         plans: vec![
             PlanOffer::new(claude(), "pro", Usd::from_cents(2_000), 1),
             PlanOffer::new(claude(), "max_5x", Usd::from_cents(10_000), 5),
-            PlanOffer::new(claude(), "max_20x", Usd::from_cents(20_000), 20),
+            PlanOffer::new(claude(), "max_20x", Usd::from_cents(20_000), 10),
         ],
     }
 }
@@ -157,7 +157,7 @@ fn worth(cents: u64) -> TokenCounts {
     input_only(cents * 2_000)
 }
 
-fn spent(cents: u64) -> Vec<UsageRecord> {
+fn usage_worth(cents: u64) -> Vec<UsageRecord> {
     vec![usage("claude-opus-5-5", day(2026, 11, 1), worth(cents))]
 }
 
@@ -180,7 +180,7 @@ fn the_wedge_shrinks_in_four_steps_then_turns_paid_off() {
         let a = only(&inputs(
             day(2026, 11, 11),
             subscription("max_5x", 24),
-            spent(cents),
+            usage_worth(cents),
         ));
         assert_eq!(a.wedge, Some(wedge), "at ${cents} cents of value");
     }
@@ -191,12 +191,12 @@ fn the_multiplier_appears_once_paid_off() {
     let before = only(&inputs(
         day(2026, 11, 11),
         subscription("max_5x", 24),
-        spent(9_999),
+        usage_worth(9_999),
     ));
     let after = only(&inputs(
         day(2026, 11, 11),
         subscription("max_5x", 24),
-        spent(12_000),
+        usage_worth(12_000),
     ));
 
     assert_eq!(before.multiplier, None);
@@ -208,7 +208,7 @@ fn the_multiplier_appears_once_paid_off() {
 fn a_price_override_replaces_the_list_price() {
     let mut sub = subscription("max_5x", 24);
     sub.price_override = Some(Usd::from_cents(9_000));
-    let a = only(&inputs(day(2026, 11, 11), sub, spent(9_000)));
+    let a = only(&inputs(day(2026, 11, 11), sub, usage_worth(9_000)));
 
     assert_eq!(a.price, Some(Usd::from_cents(9_000)));
     assert_eq!(a.wedge, Some(Wedge::PaidOff));
@@ -219,7 +219,7 @@ fn a_plan_missing_from_the_catalog_has_value_but_no_progress() {
     let a = only(&inputs(
         day(2026, 11, 11),
         subscription("max_50x", 24),
-        spent(5_000),
+        usage_worth(5_000),
     ));
 
     assert_eq!(a.value, Usd::from_cents(5_000));
@@ -232,7 +232,7 @@ fn a_plan_missing_from_the_catalog_has_value_but_no_progress() {
 fn responses_from_unknown_models_are_counted_but_never_valued() {
     let mut mystery = usage("claude-mystery-1", day(2026, 11, 1), input_only(1_000_000));
     mystery.responses = 12;
-    let mut records = spent(4_000);
+    let mut records = usage_worth(4_000);
     records.push(mystery);
     let a = only(&inputs(
         day(2026, 11, 11),
@@ -275,12 +275,12 @@ fn nibbling_until_paid_off() {
     let under = only(&inputs(
         day(2026, 11, 11),
         subscription("max_5x", 24),
-        spent(9_999),
+        usage_worth(9_999),
     ));
     let over = only(&inputs(
         day(2026, 11, 11),
         subscription("max_5x", 24),
-        spent(10_000),
+        usage_worth(10_000),
     ));
 
     assert_eq!(under.mood, Mood::Nibbling);
@@ -297,7 +297,11 @@ fn reading(at: DateTime<Utc>, five_hour: u16, seven_day: u16) -> LimitReading {
 }
 
 fn with_limits(plan: &str, cents: u64, limits: Vec<LimitReading>) -> Assessment {
-    let mut i = inputs(day(2026, 11, 11), subscription(plan, 24), spent(cents));
+    let mut i = inputs(
+        day(2026, 11, 11),
+        subscription(plan, 24),
+        usage_worth(cents),
+    );
     i.limits = limits;
     only(&i)
 }
@@ -310,7 +314,7 @@ fn hitting_the_five_hour_window_on_three_of_the_last_seven_days_is_still_hungry(
         vec![
             reading(day(2026, 11, 5), 95, 40),
             reading(day(2026, 11, 8), 90, 50),
-            reading(day(2026, 11, 11), 100, 60),
+            reading(day(2026, 11, 10), 100, 60),
         ],
     );
 
@@ -329,7 +333,7 @@ fn two_days_at_the_five_hour_limit_or_older_hits_are_not_enough() {
         "max_5x",
         5_000,
         vec![
-            reading(day(2026, 11, 4), 100, 40), // eight days ago: outside the week
+            reading(day(2026, 11, 3), 100, 40), // before the last seven full days
             reading(day(2026, 11, 8), 95, 50),
             reading(day(2026, 11, 8), 99, 50), // same day twice counts once
             reading(day(2026, 11, 10), 92, 60),
@@ -370,7 +374,11 @@ fn on_the_biggest_plan_still_hungry_suggests_nothing() {
 }
 
 fn sleepy_inputs(plan: &str, cents: u64, limits: Vec<LimitReading>) -> Inputs {
-    let mut i = inputs(day(2026, 11, 11), subscription(plan, 24), spent(cents));
+    let mut i = inputs(
+        day(2026, 11, 11),
+        subscription(plan, 24),
+        usage_worth(cents),
+    );
     i.limits = limits;
     i
 }
@@ -387,7 +395,7 @@ fn on_pro_light_use_suggests_paying_the_api_directly() {
         a.suggestion,
         Some(Suggestion::Downgrade {
             to: CheaperOption::Api {
-                would_have_cost: Usd::from_cents(900)
+                api_value: Usd::from_cents(900)
             }
         })
     );
@@ -449,22 +457,84 @@ fn a_dismissal_hides_the_suggestion_until_the_next_cycle() {
 }
 
 #[test]
-fn organization_seats_get_moods_but_no_suggestions() {
-    let mut sleepy = sleepy_inputs("pro", 100, vec![]);
-    sleepy.subscriptions[0].seat = SeatKind::Organization;
-    let mut hungry = sleepy_inputs("pro", 100, vec![reading(day(2026, 11, 10), 50, 95)]);
-    hungry.subscriptions[0].seat = SeatKind::Organization;
+fn organization_seats_get_api_value_without_plan_advice() {
+    let mut light = sleepy_inputs("pro", 100, vec![]);
+    light.subscriptions[0].seat = SeatKind::Organization;
+    let mut limited = sleepy_inputs("pro", 100, vec![reading(day(2026, 11, 10), 50, 95)]);
+    limited.subscriptions[0].seat = SeatKind::Organization;
 
-    assert_eq!(only(&sleepy).mood, Mood::Sleepy);
-    assert_eq!(only(&sleepy).suggestion, None);
-    assert_eq!(only(&hungry).mood, Mood::StillHungry);
-    assert_eq!(only(&hungry).suggestion, None);
+    for a in [only(&light), only(&limited)] {
+        assert_eq!(a.mood, Mood::Nibbling);
+        assert_eq!(a.suggestion, None);
+        assert_eq!(a.value, Usd::from_cents(100));
+    }
+}
+
+#[test]
+fn todays_readings_count_from_tomorrow_so_moods_change_once_a_day() {
+    let limits = vec![
+        reading(day(2026, 11, 8), 95, 40),
+        reading(day(2026, 11, 9), 95, 40),
+        reading(day(2026, 11, 11), 100, 95), // today, still in progress
+    ];
+
+    assert_eq!(with_limits("max_5x", 5_000, limits).mood, Mood::Nibbling);
+}
+
+fn weekly(at: DateTime<Utc>, seven_day: u16) -> LimitReading {
+    LimitReading {
+        provider: claude(),
+        at,
+        five_hour: None,
+        seven_day: Some(seven_day),
+    }
+}
+
+#[test]
+fn ultra_without_a_five_hour_limit_is_judged_on_its_weekly_peak() {
+    // $50 is under Max's $100. Ultra is 10x Pro and Max 5x, so a 40% weekly peak is 80% of
+    // Max and fits; 50% would be 100%.
+    let fits = only(&sleepy_inputs(
+        "max_20x",
+        5_000,
+        vec![weekly(day(2026, 11, 3), 40)],
+    ));
+    let too_busy = only(&sleepy_inputs(
+        "max_20x",
+        5_000,
+        vec![weekly(day(2026, 11, 3), 50)],
+    ));
+
+    assert_eq!(fits.mood, Mood::Sleepy);
+    assert_eq!(
+        fits.suggestion,
+        Some(Suggestion::Downgrade {
+            to: CheaperOption::Plan(PlanId::new("max_5x"))
+        })
+    );
+    assert_eq!(too_busy.mood, Mood::Nibbling);
+}
+
+#[test]
+fn every_window_with_readings_must_fit_the_cheaper_plan() {
+    // The 5-hour peak fits Pro (15% x 5 = 75%) but the weekly one does not (20% x 5 = 100%).
+    let a = only(&sleepy_inputs(
+        "max_5x",
+        1_500,
+        vec![reading(day(2026, 11, 3), 15, 20)],
+    ));
+
+    assert_eq!(a.mood, Mood::Nibbling);
 }
 
 #[test]
 fn the_menu_bar_combines_every_priced_subscription() {
     let openai = ProviderId::new("openai");
-    let mut i = inputs(day(2026, 11, 11), subscription("max_5x", 24), spent(6_000));
+    let mut i = inputs(
+        day(2026, 11, 11),
+        subscription("max_5x", 24),
+        usage_worth(6_000),
+    );
     i.catalog.plans.push(PlanOffer::new(
         openai.clone(),
         "plus",

@@ -51,6 +51,7 @@ struct ModelEntry {
 struct PlanEntry {
     provider: String,
     id: String,
+    name: Option<String>,
     price: String,
     capacity: u32,
 }
@@ -81,12 +82,11 @@ impl CatalogSource for JsonCatalog {
             .into_iter()
             .map(|p| {
                 let price = dollars(&p.price)?;
-                Ok(PlanOffer::new(
-                    ProviderId::new(p.provider),
-                    &p.id,
-                    price,
-                    p.capacity,
-                ))
+                let offer = PlanOffer::new(ProviderId::new(p.provider), &p.id, price, p.capacity);
+                Ok(PlanOffer {
+                    name: p.name.unwrap_or_else(|| offer.name.clone()),
+                    ..offer
+                })
             })
             .collect::<Result<_, SourceError>>()?;
         Ok(PriceCatalog { models, plans })

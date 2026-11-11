@@ -24,6 +24,32 @@ pub struct ClaudeCode {
 }
 
 impl ClaudeCode {
+    /// The adapter over Claude Code's own folders: `config_dir` when the user moved them
+    /// with `CLAUDE_CONFIG_DIR` (which then holds both logs and config), else `~/.claude`
+    /// for logs and `~/.claude.json` for config. nibble's history goes in `cache_file`.
+    #[must_use]
+    pub fn locate(home: &Path, config_dir: Option<PathBuf>, cache_file: PathBuf) -> Self {
+        let (projects_dir, config_file) = match config_dir {
+            Some(dir) => (dir.join("projects"), dir.join(".claude.json")),
+            None => (
+                home.join(".claude").join("projects"),
+                home.join(".claude.json"),
+            ),
+        };
+        Self::new(projects_dir, config_file, cache_file)
+    }
+
+    /// [`Self::locate`] honouring the `CLAUDE_CONFIG_DIR` environment variable, as Claude
+    /// Code itself does.
+    #[must_use]
+    pub fn installed(home: &Path, cache_file: PathBuf) -> Self {
+        Self::locate(
+            home,
+            std::env::var_os("CLAUDE_CONFIG_DIR").map(PathBuf::from),
+            cache_file,
+        )
+    }
+
     /// An adapter over `projects_dir` (session logs), `config_file` (`.claude.json`)
     /// and `cache_file` (nibble's own history).
     #[must_use]

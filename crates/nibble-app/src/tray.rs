@@ -78,7 +78,10 @@ pub(crate) fn show<R: Runtime>(app: &AppHandle<R>, combined: &Combined) -> tauri
     };
     tray.set_icon(Some(Image::from_bytes(bytes)?))?;
     tray.set_icon_as_template(true)?;
-    let label = combined.multiplier.map(view::multiplier);
+    let bound = if combined.has_unpriced { "≥" } else { "" };
+    let label = combined
+        .multiplier
+        .map(|m| format!("{bound}{}", view::multiplier(m)));
     let tooltip = label.as_ref().map_or_else(
         || "nibble: eating through your plan".to_owned(),
         |m| format!("nibble: paid off, {m}"),

@@ -59,7 +59,7 @@ _Avoid_: cost, spend, savings
 A Usage record whose model is missing from the Price catalog; counted, never valued.
 
 **Rolling 30 days**:
-The thirty days ending now, used to judge whether a cheaper option would do.
+The thirty full days before today, used to judge whether a cheaper option would do; with less history, what there is is scaled up to thirty days.
 
 ## Limits
 

@@ -54,6 +54,8 @@ fn the_bundled_catalog_prices_every_individual_claude_plan() {
         .collect();
     // Anthropic now sells max_20x as "Ultra", described as 10x Pro (claude.com/pricing, 2026-11-11).
     assert_eq!(capacities, vec![Some(1), Some(5), Some(10)]);
+    let names: Vec<_> = catalog.plans.iter().map(|p| p.name.as_str()).collect();
+    assert_eq!(names, vec!["Pro", "Max", "Ultra"]);
     assert!(
         catalog
             .models

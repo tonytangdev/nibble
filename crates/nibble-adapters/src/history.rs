@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 const VERSION: u32 = 1;
 /// How long daily totals and duplicate-detection keys are kept: 13 weeks.
 const USAGE_DAYS: u64 = 91;
-/// How long limit readings are kept.
-const LIMIT_DAYS: u64 = 14;
+/// How long limit readings are kept: long enough for Sleepy's Rolling 30 days.
+const LIMIT_DAYS: u64 = 31;
 
 /// Daily totals for one model.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]

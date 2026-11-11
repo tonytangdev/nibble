@@ -10,25 +10,22 @@ use crate::{CheaperOption, Inputs, LimitReading, Mood, PlanOffer, Progress, Prov
 const NEAR_LIMIT: u16 = 90;
 /// Days at the 5-hour limit within the last week that make nibble Still hungry.
 const HUNGRY_DAYS: usize = 3;
+/// The days Still hungry looks back over.
+const WEEK_DAYS: u64 = 7;
 /// Days in the Rolling 30 days.
 pub(crate) const ROLLING_DAYS: u64 = 30;
 /// Days of history needed before nibble judges a Plan as too big.
 pub(crate) const MIN_HISTORY_DAYS: u64 = 14;
 
-/// Still hungry: the 5-hour window reached the limit on enough of the last 7 days,
+/// Still hungry: the 5-hour window reached the limit on enough of the last 7 full days,
 /// or the 7-day window reached it at all during them.
 pub(crate) fn still_hungry(
     limits: &[LimitReading],
     provider: &ProviderId,
     today: NaiveDate,
 ) -> bool {
-    let week_start = today.checked_sub_days(Days::new(6)).unwrap_or(today);
-    let this_week = limits
-        .iter()
-        .filter(|r| &r.provider == provider)
-        .filter(|r| (week_start..=today).contains(&r.at.date_naive()));
     let mut five_hour_days = HashSet::new();
-    for reading in this_week {
+    for reading in full_days_before(limits, provider, today, WEEK_DAYS) {
         if reading.seven_day.is_some_and(|u| u >= NEAR_LIMIT) {
             return true;
         }
@@ -42,9 +39,10 @@ pub(crate) fn still_hungry(
 /// Sleepy: the Cheaper option would have covered the last Rolling 30 days.
 ///
 /// `projected` is the Rolling 30 days' API value scaled up to 30 days when history is
-/// shorter; `price` is what the Subscription costs. A cheaper Plan must also fit the
-/// user's peak 5-hour Utilization once scaled to its smaller Capacity, so without
-/// limit readings only the API (which has no limits) can be suggested.
+/// shorter; `price` is what the Subscription costs. A cheaper Plan must also fit: the
+/// peak Utilization of every Limit window with readings, scaled to the smaller Capacity,
+/// stays under the limit. Without any reading only the API (which has no limits) is
+/// suggested.
 pub(crate) fn cheaper_option(
     inputs: &Inputs,
     current: &PlanOffer,
@@ -54,23 +52,37 @@ pub(crate) fn cheaper_option(
     let today = inputs.now.date_naive();
     let Some(smaller) = inputs.catalog.smaller_plan(&current.provider, &current.id) else {
         return (projected < price).then_some(CheaperOption::Api {
-            would_have_cost: projected,
+            api_value: projected,
         });
     };
-    let window_start = today
-        .checked_sub_days(Days::new(ROLLING_DAYS))
-        .unwrap_or(today);
-    let peak = inputs
-        .limits
-        .iter()
-        .filter(|r| r.provider == current.provider)
-        .filter(|r| (window_start..=today).contains(&r.at.date_naive()))
-        .filter_map(|r| r.five_hour)
-        .max()?;
+    let readings: Vec<&LimitReading> =
+        full_days_before(&inputs.limits, &current.provider, today, ROLLING_DAYS).collect();
+    let peaks = [
+        readings.iter().filter_map(|r| r.five_hour).max(),
+        readings.iter().filter_map(|r| r.seven_day).max(),
+    ];
     // peak × current / smaller < 90%, kept in integers.
-    let fits = u64::from(peak) * u64::from(current.capacity)
-        < u64::from(NEAR_LIMIT) * u64::from(smaller.capacity);
+    let fits_smaller = |peak: u16| {
+        u64::from(peak) * u64::from(current.capacity)
+            < u64::from(NEAR_LIMIT) * u64::from(smaller.capacity)
+    };
+    let observed = peaks.iter().any(Option::is_some);
+    let fits = observed && peaks.into_iter().flatten().all(fits_smaller);
     (projected < smaller.price && fits).then(|| CheaperOption::Plan(smaller.id.clone()))
+}
+
+/// `provider`'s readings from the `days` full days before `today`. Today's are left out
+/// until the day is over, so a Mood changes at most once a day.
+fn full_days_before<'a>(
+    limits: &'a [LimitReading],
+    provider: &'a ProviderId,
+    today: NaiveDate,
+    days: u64,
+) -> impl Iterator<Item = &'a LimitReading> {
+    let start = today.checked_sub_days(Days::new(days)).unwrap_or(today);
+    limits
+        .iter()
+        .filter(move |r| &r.provider == provider && (start..today).contains(&r.at.date_naive()))
 }
 
 /// Mood precedence: Still hungry, then Sleepy, then Paid off, then Nibbling.

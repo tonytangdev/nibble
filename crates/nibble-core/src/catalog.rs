@@ -51,6 +51,8 @@ pub struct PlanOffer {
     pub provider: ProviderId,
     /// Identifies the Plan.
     pub id: PlanId,
+    /// The Plan as the Provider names it, e.g. "Max".
+    pub name: String,
     /// The monthly list price.
     pub price: Usd,
     /// Usage allowance relative to the Provider's smallest paid Plan.
@@ -58,12 +60,13 @@ pub struct PlanOffer {
 }
 
 impl PlanOffer {
-    /// A Plan offer.
+    /// A Plan offer, named after its id until given a name.
     #[must_use]
     pub fn new(provider: ProviderId, id: &str, price: Usd, capacity: u32) -> Self {
         Self {
             provider,
             id: PlanId::new(id),
+            name: id.to_owned(),
             price,
             capacity,
         }
@@ -90,7 +93,8 @@ impl PriceCatalog {
     }
 
     /// The offer for `plan`.
-    pub(crate) fn plan(&self, provider: &ProviderId, plan: &PlanId) -> Option<&PlanOffer> {
+    #[must_use]
+    pub fn plan(&self, provider: &ProviderId, plan: &PlanId) -> Option<&PlanOffer> {
         self.plans
             .iter()
             .find(|offer| &offer.provider == provider && &offer.id == plan)

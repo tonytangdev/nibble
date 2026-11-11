@@ -1,6 +1,6 @@
 /** Mirrors `View` in crates/nibble-app/src/view.rs: what the shell sends the popover. */
 export interface View {
-  status: "loading" | "signedOut" | "ready";
+  status: "loading" | "signedOut" | "noUsage" | "ready";
   plan: string | null;
   valueCents: number;
   priceCents: number | null;
@@ -24,7 +24,7 @@ export type Mood = "sleepy" | "nibbling" | "paidOff" | "stillHungry";
 export type Suggestion =
   | { kind: "upgrade"; to: string }
   | { kind: "downgradePlan"; to: string }
-  | { kind: "downgradeApi"; wouldHaveCostCents: number };
+  | { kind: "downgradeApi"; apiValueCents: number };
 
 export const loading: View = {
   status: "loading",

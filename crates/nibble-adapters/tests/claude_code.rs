@@ -359,7 +359,7 @@ fn an_unexpected_utilization_shape_yields_no_reading() {
 }
 
 #[test]
-fn history_keeps_thirteen_weeks_of_usage_and_two_weeks_of_readings() {
+fn history_keeps_thirteen_weeks_of_usage_and_a_month_of_readings() {
     let home = Home::new();
     home.append(
         "p/s.jsonl",
@@ -368,8 +368,8 @@ fn history_keeps_thirteen_weeks_of_usage_and_two_weeks_of_readings() {
             assistant("new", "claude-opus-5-5", at(2026, 8, 20, 9), 1, 10), // 83 days before
         ],
     );
-    write_config(&home, &with_utilization(at(2026, 10, 20, 9), 40, 10));
-    refresh(&home, at(2026, 10, 20, 10));
+    write_config(&home, &with_utilization(at(2026, 10, 5, 9), 40, 10));
+    refresh(&home, at(2026, 10, 5, 10));
     write_config(&home, &with_utilization(at(2026, 11, 1, 9), 50, 20));
 
     let snapshot = refresh(&home, at(2026, 11, 11, 12));
@@ -433,4 +433,52 @@ fn history_starts_at_the_first_usage_or_when_nibble_first_ran() {
         refresh(&with_logs, at(2026, 11, 11, 12)).history_start,
         at(2026, 10, 15, 0)
     );
+}
+
+#[test]
+fn finds_logs_and_config_in_claude_codes_default_places() {
+    let home = Home::new();
+    home.append(
+        "p/s.jsonl",
+        &[assistant(
+            "1",
+            "claude-opus-5-5",
+            at(2026, 11, 10, 9),
+            5,
+            50,
+        )],
+    );
+    write_config(&home, &signed_in("claude_max", "default_claude_max_5x"));
+
+    let snapshot = ClaudeCode::locate(home.dir.path(), None, home.cache())
+        .refresh(at(2026, 11, 11, 12))
+        .unwrap();
+
+    assert_eq!(snapshot.usage.len(), 1);
+    assert!(snapshot.subscription.is_some());
+}
+
+#[test]
+fn a_custom_claude_config_dir_holds_both_logs_and_config() {
+    let home = Home::new();
+    let custom = home.dir.path().join("work-claude");
+    let log = custom.join("projects/p/s.jsonl");
+    fs::create_dir_all(log.parent().unwrap()).unwrap();
+    fs::write(
+        &log,
+        assistant("1", "claude-opus-5-5", at(2026, 11, 10, 9), 5, 50) + "\n",
+    )
+    .unwrap();
+    fs::write(
+        custom.join(".claude.json"),
+        signed_in("claude_max", "default_claude_max_5x").to_string(),
+    )
+    .unwrap();
+
+    let snapshot = ClaudeCode::locate(home.dir.path(), Some(custom), home.cache())
+        .refresh(at(2026, 11, 11, 12))
+        .unwrap();
+
+    assert_eq!(snapshot.usage.len(), 1);
+    assert!(snapshot.subscription.is_some());
 }

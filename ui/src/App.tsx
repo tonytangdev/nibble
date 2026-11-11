@@ -2,14 +2,26 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
 
+import crumbs from "../../design/menubar/crumbs.svg";
+import wedgePaidOff from "../../design/menubar/paid-off.svg";
+import wedgeFull from "../../design/menubar/wedge-100.svg";
+import wedgeOneThird from "../../design/menubar/wedge-33.svg";
+import wedgeTwoThirds from "../../design/menubar/wedge-66.svg";
 import nibbling from "../../design/nibble-nibbling.svg";
 import paidOff from "../../design/nibble-paid-off.svg";
 import sleepy from "../../design/nibble-sleepy.svg";
 import stillHungry from "../../design/nibble-still-hungry.svg";
 import { dollars, headline, renewal, suggestionText } from "./copy";
-import { loading, type Mood, type View } from "./view";
+import { loading, type Mood, type View, type Wedge } from "./view";
 
 const mascots: Record<Mood, string> = { nibbling, paidOff, sleepy, stillHungry };
+const wedges: Record<Wedge, string> = {
+  full: wedgeFull,
+  twoThirds: wedgeTwoThirds,
+  oneThird: wedgeOneThird,
+  crumbs,
+  paidOff: wedgePaidOff,
+};
 
 /** The latest View from the shell: fetched once, then pushed on every refresh. */
 function useView(): View {
@@ -43,6 +55,13 @@ export function App() {
 
 function Body({ view }: { view: View }) {
   if (view.status === "loading") return <p className="lede">Counting crumbs…</p>;
+  if (view.status === "noUsage") {
+    return (
+      <p className="lede">
+        No Claude Code usage yet. Use Claude Code and nibble will start eating through your plan.
+      </p>
+    );
+  }
   if (view.status === "signedOut") {
     return (
       <p className="lede">
@@ -53,8 +72,16 @@ function Body({ view }: { view: View }) {
   const reading = renewal(view);
   return (
     <>
-      <h1>{headline(view.mood, view)}</h1>
+      <h1>{headline(view)}</h1>
       <p className="amount">
+        {view.wedge && (
+          <span
+            className="wedge"
+            role="img"
+            aria-label={`Wedge: ${view.wedge}`}
+            style={{ maskImage: `url(${wedges[view.wedge]})` }}
+          />
+        )}
         <span className="mono">{dollars(view.valueCents)}</span>
         {view.priceCents !== null && (
           <span className="of"> of {dollars(view.priceCents)} at API rates</span>

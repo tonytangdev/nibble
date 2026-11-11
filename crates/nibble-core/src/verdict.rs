@@ -95,7 +95,7 @@ pub enum CheaperOption {
     Plan(PlanId),
     /// Paying the API directly, already being on the smallest Plan.
     Api {
-        /// What the last Rolling 30 days would have cost at API rates.
-        would_have_cost: Usd,
+        /// The last Rolling 30 days' API value, scaled to 30 days on shorter history.
+        api_value: Usd,
     },
 }

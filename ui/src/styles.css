@@ -60,6 +60,17 @@ h1 {
   font-size: 22px;
 }
 
+.wedge {
+  display: inline-block;
+  width: 26px;
+  height: 26px;
+  margin-right: 8px;
+  vertical-align: -3px;
+  background: var(--teal);
+  mask-size: contain;
+  mask-repeat: no-repeat;
+}
+
 .amount .of {
   font-size: 13px;
   color: var(--ink-soft);

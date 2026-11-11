@@ -1,4 +1,4 @@
-import type { Mood, Suggestion, View } from "./view";
+import type { Suggestion, View } from "./view";
 
 /** Whole dollars below $100, cents only when they matter. */
 export function dollars(cents: number): string {
@@ -10,9 +10,9 @@ export function dollars(cents: number): string {
   });
 }
 
-export function headline(mood: Mood, view: View): string {
+export function headline(view: View): string {
   const plan = view.plan ?? "your plan";
-  switch (mood) {
+  switch (view.mood) {
     case "nibbling":
       return `Nibbling through ${plan}`;
     case "paidOff":
@@ -31,7 +31,7 @@ export function suggestionText(suggestion: Suggestion, plan: string): string {
     case "downgradePlan":
       return `${suggestion.to} would have covered your last 30 days, limits included.`;
     case "downgradeApi":
-      return `At API rates, your last 30 days would have cost ${dollars(suggestion.wouldHaveCostCents)}. Paying as you go may beat ${plan}.`;
+      return `At API rates, your last 30 days would have cost ${dollars(suggestion.apiValueCents)}. Paying as you go may beat ${plan}.`;
   }
 }
 

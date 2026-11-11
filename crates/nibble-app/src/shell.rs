@@ -74,20 +74,12 @@ pub(crate) fn run() -> tauri::Result<()> {
 
 fn new_shell<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Shell> {
     let paths = app.path();
-    // Claude Code honours CLAUDE_CONFIG_DIR, which moves both its logs and its config file.
-    let claude_dir = std::env::var_os("CLAUDE_CONFIG_DIR").map(PathBuf::from);
-    let (projects, config) = if let Some(dir) = claude_dir {
-        (dir.join("projects"), dir.join(".claude.json"))
-    } else {
-        let home = paths.home_dir()?;
-        (
-            home.join(".claude").join("projects"),
-            home.join(".claude.json"),
-        )
-    };
     let settings_path = paths.app_config_dir()?.join("settings.json");
     Ok(Shell {
-        source: ClaudeCode::new(projects, config, paths.app_data_dir()?.join("history.json")),
+        source: ClaudeCode::installed(
+            &paths.home_dir()?,
+            paths.app_data_dir()?.join("history.json"),
+        ),
         settings: Settings::load(&settings_path),
         settings_path,
         view: View::default(),
@@ -129,14 +121,11 @@ fn reassess(shell: &mut Shell) -> Result<(View, Option<Combined>), SourceError> 
     let snapshot = shell.source.refresh(now)?;
     let catalog = JsonCatalog::bundled().catalog()?;
     let Some(detected) = snapshot.subscription else {
-        return Ok((
-            View {
-                status: Status::SignedOut,
-                ..View::default()
-            },
-            None,
-        ));
+        return Ok((View::waiting(Status::SignedOut), None));
     };
+    if snapshot.usage.is_empty() {
+        return Ok((View::waiting(Status::NoUsage), None));
+    }
     let subscription = shell.settings.apply(detected);
     let inputs = Inputs {
         now,
@@ -149,17 +138,11 @@ fn reassess(shell: &mut Shell) -> Result<(View, Option<Combined>), SourceError> 
     };
     let report = assess(&inputs);
     let Some(assessment) = report.subscriptions.first() else {
-        return Ok((
-            View {
-                status: Status::SignedOut,
-                ..View::default()
-            },
-            None,
-        ));
+        return Ok((View::waiting(Status::SignedOut), None));
     };
     shell.subscription = Some(subscription.id.as_str().to_owned());
     shell.cycle = Some(assessment.cycle.start);
-    let mut view = view::of(assessment, subscription.plan.as_str());
+    let mut view = view::of(assessment, &subscription, &inputs.catalog);
     view.prompts = Prompts {
         celebrate: assessment.multiplier.is_some()
             && shell.settings.celebrated_cycle != shell.cycle,

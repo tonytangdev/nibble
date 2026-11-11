@@ -115,11 +115,16 @@ fn assess_one(inputs: &Inputs, sub: &Subscription) -> Assessment {
     let price = sub.price_override.or_else(|| offer.map(|o| o.price));
     let progress = price.and_then(|price| Progress::of(value, price));
 
-    let cheaper = offer.zip(price).and_then(|(offer, price)| {
-        let projected = projected_rolling_value(inputs, sub, today)?;
-        rules::cheaper_option(inputs, offer, price, projected)
-    });
-    let hungry = rules::still_hungry(&inputs.limits, &sub.provider, today);
+    // Organization seats get API value only: their pricing and limits work differently.
+    let judged = sub.seat == SeatKind::Individual;
+    let cheaper = offer
+        .zip(price)
+        .filter(|_| judged)
+        .and_then(|(offer, price)| {
+            let projected = projected_rolling_value(inputs, sub, today)?;
+            rules::cheaper_option(inputs, offer, price, projected)
+        });
+    let hungry = judged && rules::still_hungry(&inputs.limits, &sub.provider, today);
     let mood = rules::mood(hungry, cheaper.is_some(), progress);
     let suggestion = suggest(inputs, sub, &cycle, mood, cheaper);
 

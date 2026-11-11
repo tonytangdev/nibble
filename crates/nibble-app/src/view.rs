@@ -1,6 +1,9 @@
 //! What the popover shows, shaped for the React side (camelCase JSON).
 
-use nibble_core::{Assessment, CheaperOption, Mood, Progress, Suggestion, Wedge};
+use nibble_core::{
+    Assessment, CheaperOption, Mood, PlanId, PriceCatalog, Progress, Subscription, Suggestion,
+    Wedge,
+};
 use serde::Serialize;
 
 /// Everything the popover renders.
@@ -43,6 +46,8 @@ pub(crate) enum Status {
     Loading,
     /// No Claude account found in Claude Code's config.
     SignedOut,
+    /// Signed in, but Claude Code has logged no usage yet.
+    NoUsage,
     Ready,
 }
 
@@ -52,14 +57,29 @@ pub(crate) enum Status {
 pub(crate) enum SuggestionView {
     Upgrade { to: String },
     DowngradePlan { to: String },
-    DowngradeApi { would_have_cost_cents: u64 },
+    DowngradeApi { api_value_cents: u64 },
+}
+
+impl View {
+    /// A View with nothing to assess yet, explained by `status`.
+    pub(crate) fn waiting(status: Status) -> Self {
+        Self {
+            status,
+            ..Self::default()
+        }
+    }
 }
 
 /// The popover's view of one Assessment.
-pub(crate) fn of(assessment: &Assessment, plan: &str) -> View {
+pub(crate) fn of(
+    assessment: &Assessment,
+    subscription: &Subscription,
+    catalog: &PriceCatalog,
+) -> View {
+    let name = |plan: &PlanId| plan_name(catalog, subscription, plan);
     View {
         status: Status::Ready,
-        plan: Some(plan_name(plan)),
+        plan: Some(name(&subscription.plan)),
         value_cents: cents(assessment.value.micros()),
         price_cents: assessment.price.map(|p| cents(p.micros())),
         progress_percent: assessment.progress.map(|p| p.basis_points() / 100),
@@ -67,7 +87,7 @@ pub(crate) fn of(assessment: &Assessment, plan: &str) -> View {
         multiplier: assessment.multiplier.map(multiplier),
         lower_bound: assessment.unpriced_responses > 0,
         mood: mood_name(assessment.mood),
-        suggestion: assessment.suggestion.as_ref().map(suggestion),
+        suggestion: assessment.suggestion.as_ref().map(|s| suggestion(s, name)),
         renews_on: Some(assessment.cycle.renews_on.format("%b %-d").to_string()),
         days_left: Some(assessment.cycle.days_left),
         unpriced_responses: assessment.unpriced_responses,
@@ -85,7 +105,7 @@ pub(crate) fn multiplier(progress: Progress) -> String {
     }
 }
 
-/// The tray icon file for a Wedge.
+/// The Wedge's name in the popover's JSON.
 pub(crate) fn wedge_name(wedge: Wedge) -> &'static str {
     match wedge {
         Wedge::Full => "full",
@@ -105,35 +125,26 @@ fn mood_name(mood: Mood) -> &'static str {
     }
 }
 
-fn suggestion(suggestion: &Suggestion) -> SuggestionView {
+fn suggestion(suggestion: &Suggestion, name: impl Fn(&PlanId) -> String) -> SuggestionView {
     match suggestion {
-        Suggestion::Upgrade { to } => SuggestionView::Upgrade {
-            to: plan_name(to.as_str()),
-        },
+        Suggestion::Upgrade { to } => SuggestionView::Upgrade { to: name(to) },
         Suggestion::Downgrade {
             to: CheaperOption::Plan(to),
-        } => SuggestionView::DowngradePlan {
-            to: plan_name(to.as_str()),
-        },
+        } => SuggestionView::DowngradePlan { to: name(to) },
         Suggestion::Downgrade {
-            to: CheaperOption::Api { would_have_cost },
+            to: CheaperOption::Api { api_value },
         } => SuggestionView::DowngradeApi {
-            would_have_cost_cents: cents(would_have_cost.micros()),
+            api_value_cents: cents(api_value.micros()),
         },
     }
 }
 
-/// A Plan id as people say it.
-pub(crate) fn plan_name(id: &str) -> String {
-    match id {
-        "pro" => "Pro".into(),
-        "max_5x" => "Max".into(),
-        // Sold as Ultra since 2026; the account tier still says max_20x.
-        "max_20x" => "Ultra".into(),
-        "team" => "Team".into(),
-        "enterprise" => "Enterprise".into(),
-        other => other.replace('_', " "),
-    }
+/// A Plan's name as the Provider sells it, from the Price catalog.
+fn plan_name(catalog: &PriceCatalog, subscription: &Subscription, plan: &PlanId) -> String {
+    catalog.plan(&subscription.provider, plan).map_or_else(
+        || plan.as_str().replace('_', " "),
+        |offer| offer.name.clone(),
+    )
 }
 
 const fn cents(micros: u64) -> u64 {
