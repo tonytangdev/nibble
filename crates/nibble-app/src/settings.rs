@@ -90,7 +90,9 @@ mod tests {
 
     /// Loads `json` the way the app does, from a file.
     fn load(name: &str, json: &str) -> Settings {
-        let path: PathBuf = std::env::temp_dir().join(format!("nibble-settings-{name}.json"));
+        // The process id keeps parallel runs in other worktrees off this file.
+        let file = format!("nibble-settings-{}-{name}.json", std::process::id());
+        let path: PathBuf = std::env::temp_dir().join(file);
         fs::write(&path, json).expect("write the test settings");
         let settings = Settings::load(&path);
         let _removed = fs::remove_file(&path);

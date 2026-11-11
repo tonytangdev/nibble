@@ -36,9 +36,44 @@ struct Shell {
     week: Option<DateTime<Utc>>,
     /// When nibble last asked GitHub for a new version, this run.
     last_update_check: Option<DateTime<Utc>>,
-    /// The newer version found, kept to install it.
-    update: Option<Update>,
-    update_view: Option<UpdateView>,
+    /// The newer version found this run, if any.
+    pending: Option<Pending>,
+}
+
+/// A newer version, kept to install it, and how far installing it got.
+struct Pending {
+    update: Update,
+    stage: Stage,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Stage {
+    Found,
+    Installing,
+    Failed,
+}
+
+impl Pending {
+    fn found(update: Update) -> Self {
+        Self {
+            update,
+            stage: Stage::Found,
+        }
+    }
+
+    fn installing(&self) -> bool {
+        self.stage == Stage::Installing
+    }
+
+    fn view(&self) -> UpdateView {
+        match self.stage {
+            Stage::Found => UpdateView::Available {
+                version: self.update.version.clone(),
+            },
+            Stage::Installing => UpdateView::Installing,
+            Stage::Failed => UpdateView::Failed,
+        }
+    }
 }
 
 /// The shell, shared between the refresh thread and command handlers.
@@ -119,8 +154,7 @@ fn new_shell<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Shell> {
         subscription: None,
         week: None,
         last_update_check: None,
-        update: None,
-        update_view: None,
+        pending: None,
     })
 }
 
@@ -152,10 +186,10 @@ fn refresh<R: Runtime>(app: &AppHandle<R>) {
         autostart: app.autolaunch().is_enabled().unwrap_or(false),
         update_checks: !shell.settings.update_checks_off,
     };
-    view.update = shell
-        .update_view
-        .clone()
-        .filter(|_| view.switches.update_checks);
+    // With checks off, a found version stops nagging, but an install under way still shows.
+    view.update = shell.pending.as_ref().map(Pending::view).filter(|update| {
+        view.switches.update_checks || !matches!(update, UpdateView::Available { .. })
+    });
     shell.view = view.clone();
     drop(shell);
     let _sent = app.emit(VIEW_EVENT, view);
@@ -213,35 +247,38 @@ fn notify_paid_off<R: Runtime>(app: &AppHandle<R>, shell: &mut Shell, view: &Vie
     save(shell);
 }
 
-/// Asks GitHub for a newer version, if a check is due. Failures stay quiet: the next one retries.
+/// Asks GitHub for a newer version, if a check is due. A failed check stays quiet and is
+/// retried at the next hourly tick.
 fn check_for_update<R: Runtime>(app: &AppHandle<R>) {
     let state = app.state::<AppState>();
     let now = Utc::now();
-    let is_due = state.0.lock().is_ok_and(|shell| {
-        shell.update_view != Some(UpdateView::Installing)
-            && updates::due(
-                shell.last_update_check,
-                now,
-                !shell.settings.update_checks_off,
-            )
-    });
-    if !is_due {
-        return;
-    }
+    // Claim this check before the network call, so a second caller meanwhile skips it.
+    let previous = {
+        let Ok(mut shell) = state.0.lock() else {
+            return;
+        };
+        let checks_on = !shell.settings.update_checks_off;
+        if shell.pending.as_ref().is_some_and(Pending::installing)
+            || !updates::due(shell.last_update_check, now, checks_on)
+        {
+            return;
+        }
+        shell.last_update_check.replace(now)
+    };
     let found = app
         .updater()
         .map(|updater| tauri::async_runtime::block_on(updater.check()));
     let Ok(mut shell) = state.0.lock() else {
         return;
     };
-    shell.last_update_check = Some(now);
     let Ok(Ok(found)) = found else {
+        shell.last_update_check = previous;
         return;
     };
-    shell.update_view = found.as_ref().map(|update| UpdateView::Available {
-        version: update.version.clone(),
-    });
-    shell.update = found;
+    if shell.pending.as_ref().is_some_and(Pending::installing) {
+        return;
+    }
+    shell.pending = found.map(Pending::found);
     drop(shell);
     refresh_soon(app);
 }
@@ -253,11 +290,11 @@ fn install_update<R: Runtime>(app: &AppHandle<R>) {
         let Ok(mut shell) = state.0.lock() else {
             return;
         };
-        let Some(update) = shell.update.clone() else {
+        let Some(pending) = shell.pending.as_mut().filter(|p| !p.installing()) else {
             return;
         };
-        shell.update_view = Some(UpdateView::Installing);
-        update
+        pending.stage = Stage::Installing;
+        pending.update.clone()
     };
     refresh(app);
     let installed =
@@ -265,8 +302,10 @@ fn install_update<R: Runtime>(app: &AppHandle<R>) {
     if installed.is_ok() {
         app.restart();
     }
-    if let Ok(mut shell) = state.0.lock() {
-        shell.update_view = Some(UpdateView::Failed);
+    if let Ok(mut shell) = state.0.lock()
+        && let Some(pending) = shell.pending.as_mut()
+    {
+        pending.stage = Stage::Failed;
     }
     refresh(app);
 }

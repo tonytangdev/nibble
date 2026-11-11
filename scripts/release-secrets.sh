@@ -199,6 +199,19 @@ finish() {
 # the whole file before the first prompt, so an edit mid-run can't break it.
 # ──────────────────────────────────────────────────────────────────────────
 
+# ask_path VAR "Prompt" reads a file path into $VAR until one exists. Accepts a file dragged
+# into the terminal, which macOS may quote, escape or follow with a space.
+ask_path() {
+  local key="$1" prompt="$2" path
+  while :; do
+    read -e -r -p "  $BOLD$prompt$RESET " path || return 1
+    path="${path% }"; path="${path%\"}"; path="${path#\"}"; path="${path//\\ / }"
+    [[ -f "$path" ]] && break
+    warn "No file at $path. Try again."
+  done
+  printf -v "$key" '%s' "$path"
+}
+
 run_wizard() {
 
 TOTAL_STAGES=7
@@ -247,13 +260,7 @@ else
   step "Profile type: 'G2 Sub-CA'. Upload $WORK/developer-id.csr, then Continue."
   step "Download the certificate (developer_id_application.cer)."
   note "If the page has changed, look for the Developer ID Application certificate."
-  while :; do
-    ask DOWNLOADED_CER "Path to the downloaded .cer (drag the file here):"
-    DOWNLOADED_CER="${DOWNLOADED_CER%\"}"; DOWNLOADED_CER="${DOWNLOADED_CER#\"}"
-    DOWNLOADED_CER="${DOWNLOADED_CER% }"; DOWNLOADED_CER="${DOWNLOADED_CER//\\ / }"
-    [[ -f "$DOWNLOADED_CER" ]] && break
-    warn "No file at $DOWNLOADED_CER. Try again."
-  done
+  ask_path DOWNLOADED_CER "Path to the downloaded .cer (drag the file here):"
   cp "$DOWNLOADED_CER" "$WORK/developer-id.cer"
 fi
 
@@ -289,15 +296,12 @@ ask APPLE_API_ISSUER "Issuer ID (shown above the keys table):"
 write_env APPLE_API_ISSUER "$APPLE_API_ISSUER"
 ask APPLE_API_KEY "Key ID (the key's row in the table):"
 write_env APPLE_API_KEY "$APPLE_API_KEY"
-while :; do
-  ask APPLE_API_KEY_FILE "Path to the downloaded .p8 (drag the file here):"
-  APPLE_API_KEY_FILE="${APPLE_API_KEY_FILE%\"}"; APPLE_API_KEY_FILE="${APPLE_API_KEY_FILE#\"}"
-  APPLE_API_KEY_FILE="${APPLE_API_KEY_FILE% }"; APPLE_API_KEY_FILE="${APPLE_API_KEY_FILE//\\ / }"
-  [[ -f "$APPLE_API_KEY_FILE" ]] && break
-  warn "No file at $APPLE_API_KEY_FILE. Try again."
-done
-(umask 077 && cp "$APPLE_API_KEY_FILE" "$WORK/AuthKey.p8")
-write_env APPLE_API_KEY_FILE "$WORK/AuthKey.p8"
+if [[ -f "$WORK/AuthKey.p8" ]]; then
+  note "Found $WORK/AuthKey.p8 from an earlier run; keeping it."
+else
+  ask_path P8_FILE "Path to the downloaded .p8 (drag the file here):"
+  (umask 077 && cp "$P8_FILE" "$WORK/AuthKey.p8")
+fi
 
 # ── 5 ─────────────────────────────────────────────────────────────────────
 stage "Updater signing key"
@@ -321,6 +325,7 @@ PUBKEY="$PUBKEY" node -e '
   conf.plugins.updater.pubkey = process.env.PUBKEY;
   fs.writeFileSync(path, JSON.stringify(conf, null, 2) + "\n");
 ' "$CONF"
+pnpm exec prettier --write "$CONF" >/dev/null
 printf '  %s✓ wrote%s the public key → %s\n' "$GREEN" "$RESET" "$CONF"
 pause
 

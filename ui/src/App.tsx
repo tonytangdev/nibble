@@ -265,7 +265,7 @@ function UpdatePrompt({ update }: { update: Update }) {
     case "failed":
       return (
         <aside className="callout" aria-live="polite">
-          <p>The update didn’t install.</p>
+          <p>The update slipped away before it could settle in.</p>
           <div className="actions">
             <button type="button" onClick={install}>
               Try again
