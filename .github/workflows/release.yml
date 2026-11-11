@@ -121,3 +121,16 @@ jobs:
           releaseDraft: true
           tauriScript: pnpm exec tauri
           args: --target aarch64-apple-darwin --config crates/nibble-app/tauri.release.conf.json
+      # tauri-action notarizes the app inside the disk image, not the image itself, and Gatekeeper
+      # checks what was downloaded: notarize and staple the .dmg too, then replace it on the draft.
+      - name: Notarize and staple the disk image
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+        run: |
+          dmg=$(ls target/aarch64-apple-darwin/release/bundle/dmg/*.dmg)
+          xcrun notarytool submit "$dmg" --key "$APPLE_API_KEY_PATH" \
+            --key-id "$APPLE_API_KEY" --issuer "$APPLE_API_ISSUER" --wait
+          xcrun stapler staple "$dmg"
+          gh release upload "$GITHUB_REF_NAME" "$dmg" --clobber

@@ -1,8 +1,7 @@
 # Releasing nibble
 
 A release is a signed, notarized macOS app for Apple Silicon (macOS 13+) on a
-GitHub Release, plus the `latest.json` the in-app updater reads. Intel Macs are not supported: v0.1.0 was the one universal build, and Intel Macs running it
-find no update for their platform. Windows and Linux come later.
+GitHub Release, plus the `latest.json` the in-app updater reads. Intel Macs are not supported. Windows and Linux come later.
 
 ## Once: signing secrets
 
