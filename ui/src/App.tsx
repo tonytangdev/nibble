@@ -23,6 +23,15 @@ const wedges: Record<Wedge, string> = {
   paidOff: wedgePaidOff,
 };
 
+/**
+ * A CSS mask showing `src`'s shape. The URL is quoted because Vite inlines small SVGs as
+ * data URIs containing quotes, which an unquoted `url()` cannot hold.
+ */
+function maskOf(src: string) {
+  const image = `url(${JSON.stringify(src)})`;
+  return { maskImage: image, WebkitMaskImage: image };
+}
+
 /** The latest View from the shell: fetched once, then pushed on every refresh. */
 function useView(): View {
   const [view, setView] = useState<View>(loading);
@@ -79,7 +88,7 @@ function Body({ view }: { view: View }) {
             className="wedge"
             role="img"
             aria-label={`Wedge: ${view.wedge}`}
-            style={{ maskImage: `url(${wedges[view.wedge]})` }}
+            style={maskOf(wedges[view.wedge])}
           />
         )}
         <span className="mono">{dollars(view.valueCents)}</span>

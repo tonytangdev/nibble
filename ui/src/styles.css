@@ -67,6 +67,9 @@ h1 {
   margin-right: 8px;
   vertical-align: -3px;
   background: var(--teal);
+  /* WKWebView still needs the prefixed mask properties. */
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
   mask-size: contain;
   mask-repeat: no-repeat;
 }
