@@ -49,7 +49,7 @@ nibble, a cheese-loving mouse, eats through a wedge as your usage adds up. It ce
 - **Right-sizing suggestions.** If a smaller plan, or paying the API directly, would have covered your last 30 days, nibble says so. If you keep running into your limits, it suggests a bigger plan. "Not now" quiets a suggestion until next week.
 - **A break-even notification**, once a week, when your plan pays for itself (can be turned off).
 - **Start at login**, light and dark mode.
-- **Updates itself, when you say so.** A dot on the menu bar icon means a new version is ready; the popover offers to install it and restart.
+- **Updates itself, when you say so.** A notification tells you once when a new version is out (click it to open nibble), and a dot on the menu bar icon stays while it is ready; the popover offers to install it and restart.
 
 ## How it works
 

@@ -14,7 +14,7 @@ use nibble_core::{Combined, Wedge};
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, Runtime};
+use tauri::{AppHandle, Manager, Runtime, WebviewWindow};
 use tauri_plugin_positioner::{Position, WindowExt};
 
 use crate::view;
@@ -94,11 +94,35 @@ fn toggle_popover<R: Runtime>(app: &AppHandle<R>) {
     if window.is_visible().unwrap_or(false) {
         let _hidden = window.hide();
     } else {
-        let _moved = window.move_window(Position::TrayBottomCenter);
-        let _shown = window.show();
-        let _focused = window.set_focus();
-        crate::shell::refresh_soon(app);
+        show_popover(app, &window);
     }
+}
+
+/// Shows the popover under the tray icon without a click on it, e.g. from a notification.
+pub(crate) fn open_popover<R: Runtime>(app: &AppHandle<R>) {
+    let Some(window) = app.get_webview_window(POPOVER) else {
+        return;
+    };
+    // The positioner learns where the icon is only from tray events, and none may have
+    // come since launch, so tell it now.
+    if let Some(tray) = app.tray_by_id(ID)
+        && let Ok(Some(rect)) = tray.rect()
+    {
+        let event = TrayIconEvent::Move {
+            id: tray.id().clone(),
+            position: rect.position.to_physical(1.0),
+            rect,
+        };
+        tauri_plugin_positioner::on_tray_event(app, &event);
+    }
+    show_popover(app, &window);
+}
+
+fn show_popover<R: Runtime>(app: &AppHandle<R>, window: &WebviewWindow<R>) {
+    let _moved = window.move_window(Position::TrayBottomCenter);
+    let _shown = window.show();
+    let _focused = window.set_focus();
+    crate::shell::refresh_soon(app);
 }
 
 /// Points the icon at the combined verdict: the animator glides to the new Wedge, then

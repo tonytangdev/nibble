@@ -10,11 +10,28 @@ pub(crate) fn due(last_check: Option<DateTime<Utc>>, now: DateTime<Utc>, checks_
     checks_on && last_check.is_none_or(|last| now - last >= CHECK_EVERY)
 }
 
+/// Whether to tell the user about `found` with a notification: once per version, so a
+/// relaunch or the next daily check stays quiet.
+pub(crate) fn announce(found: &str, announced: Option<&str>) -> bool {
+    announced != Some(found)
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::{DateTime, TimeDelta, Utc};
 
-    use super::due;
+    use super::{announce, due};
+
+    #[test]
+    fn announces_a_new_version() {
+        assert!(announce("0.2.0", None));
+        assert!(announce("0.3.0", Some("0.2.0")));
+    }
+
+    #[test]
+    fn announces_each_version_once() {
+        assert!(!announce("0.2.0", Some("0.2.0")));
+    }
 
     fn at(hours: i64) -> DateTime<Utc> {
         DateTime::<Utc>::UNIX_EPOCH + TimeDelta::hours(hours)
