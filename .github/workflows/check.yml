@@ -1,63 +1,115 @@
+# Checks every push to main and every pull request. A change runs the checks of whichever
+# side it touches: the app (`app-checks.yml`), the website (`pnpm site:check`) or both, as
+# the shared inputs (package.json, the lockfile, design/, the app's icons, the TypeScript and
+# ESLint settings) trigger both. Formatting covers the whole repository and always runs.
+#
+# The `check` job always runs and fails if any check failed, so it is the one status to
+# require on main: skipped checks never leave a pull request waiting.
 name: check
 on:
   push:
     branches: [main]
   pull_request:
-  # The release workflow runs the same checks before it builds, on macOS only: it ships
-  # only macOS, so an outage on another platform's runners must not block a release.
-  workflow_call:
-    inputs:
-      macos-only:
-        type: boolean
-        default: false
 
-# A newer push to the same branch or pull request makes the run in progress stale, so it is
-# cancelled. A release calls this with its own tag as the ref, so it never cancels another run.
+permissions:
+  contents: read
+  pull-requests: read
+
+# A newer push to the same branch or pull request makes the run in progress stale, so it is cancelled.
 concurrency:
-  group: check-${{ github.workflow }}-${{ github.ref }}
+  group: check-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  check:
-    strategy:
-      fail-fast: false
-      matrix:
-        # Runner images are pinned, so an OS upgrade is a change we make, not one that happens to us.
-        # These were what `*-latest` meant on 2026-11-11 (https://github.com/actions/runner-images).
-        # Linux runs in a Debian container: its apt reads deb.debian.org, so the job does not
-        # depend on the Ubuntu mirrors GitHub's runners use, which go unreachable for hours.
-        include: ${{ fromJSON(inputs.macos-only && '[{"os":"macos-26"}]' || '[{"os":"macos-26"},{"os":"windows-2025"},{"os":"ubuntu-24.04","container":"rust:1-trixie"}]') }}
-    name: check (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
-    # A normal run takes under 5 minutes; a stuck runner fails here instead of hanging for hours.
-    timeout-minutes: 20
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+      site: ${{ steps.filter.outputs.site }}
     steps:
       - uses: actions/checkout@v7
-      - name: Install Tauri system libraries
-        if: runner.os == 'Linux'
-        # When the package mirrors are unreachable, apt retries for an hour; fail fast.
-        # Recommended packages (gstreamer plugins, pipewire, portals) are not needed to build.
-        timeout-minutes: 5
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends pkg-config libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev
+      # A pull request is compared with its base, a push to main with the commit before it.
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            shared: &shared
+              - package.json
+              - pnpm-lock.yaml
+              - pnpm-workspace.yaml
+              - tsconfig.json
+              - eslint.config.js
+              - design/**
+              - .github/workflows/check.yml
+            app:
+              - *shared
+              - crates/**
+              - ui/**
+              - Cargo.toml
+              - Cargo.lock
+              - clippy.toml
+              - rustfmt.toml
+              - rust-toolchain.toml
+              - deny.toml
+              - .github/workflows/app-checks.yml
+            site:
+              - *shared
+              - site/**
+              - crates/nibble-app/icons/**
+              - wrangler.jsonc
+              - .github/workflows/site.yml
+
+  format:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - uses: Swatinem/rust-cache@v2
-      - run: pnpm fmt:check
-      - run: pnpm typecheck
-      - run: pnpm lint
-      - run: pnpm test
-      - run: pnpm site:build
+      - run: pnpm exec prettier --check .
 
-  deny:
+  app:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    uses: ./.github/workflows/app-checks.yml
+
+  site:
+    needs: changes
+    if: needs.changes.outputs.site == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: EmbarkStudios/cargo-deny-action@v2
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The build lists the latest release's files; the token keeps it clear of the API's rate limit.
+      - run: pnpm site:check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  check:
+    needs: [changes, format, app, site]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Every check that ran passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "changes, format, app, site: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in
+              success | skipped) ;;
+              *) echo "::error::A check did not pass ($result)."; exit 1 ;;
+            esac
+          done

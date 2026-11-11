@@ -14,7 +14,7 @@ Claude Code is the first provider. OpenAI and running several subscriptions at o
 
 ## Checks
 
-The work is done when `pnpm check` passes. It runs the formatters, clippy, the tests and cargo-deny. Lint settings live in `[workspace.lints]` in `Cargo.toml` and in the `clippy.toml` files. When a lint fires, fix the code. If a lint is genuinely wrong at one spot, put `#[expect(clippy::<name>, reason = "...")]` on the smallest item that covers it.
+The work is done when `pnpm check` passes. It runs the formatters, then `pnpm app:check` (cargo fmt, tsc, clippy, ESLint on `ui/`, the tests and cargo-deny) and `pnpm site:check` (Prettier, tsc and ESLint on `site/`, then its build). CI runs the same split: `.github/workflows/check.yml` runs Prettier on the whole repository, and the app's or the site's checks only when a change touches that side or an input both share. When you add a file either side depends on, add it to that workflow's path filters. Lint settings live in `[workspace.lints]` in `Cargo.toml` and in the `clippy.toml` files. When a lint fires, fix the code. If a lint is genuinely wrong at one spot, put `#[expect(clippy::<name>, reason = "...")]` on the smallest item that covers it.
 
 ## Running the app
 

@@ -30,7 +30,7 @@ and run the wizard again.
    git tag v0.1.0 && git push origin v0.1.0
    ```
 3. The `release` workflow checks that the tag is on main, matches the version and that every
-   secret is set, runs the full checks, then builds, signs, notarizes and uploads a **draft**
+   secret is set, runs the app's checks (`app-checks.yml`, on macOS), then builds, signs, notarizes and uploads a **draft**
    release with generated notes.
 4. Download the `.dmg` from the draft, install it, and open it: macOS should open it without a
    warning. Edit the notes, then publish. Publishing is what makes it `latest`, for both the
