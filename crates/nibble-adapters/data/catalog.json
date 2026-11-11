@@ -1,0 +1,262 @@
+{
+  "retrieved": "2026-11-11",
+  "models": [
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-fable-5-2",
+      "input": "8",
+      "output": "40",
+      "cache_read": "0.20",
+      "cache_write_5m": "10",
+      "cache_write_1h": "16",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "All five rates stated in the page's table. Cache read is 0.025x input. Full 1M context at standard rates. Fast mode costs extra ($16 input, $80 output) and is not modelled here."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-fable-5-1",
+      "input": "10",
+      "output": "50",
+      "cache_read": "0.25",
+      "cache_write_5m": "12.50",
+      "cache_write_1h": "20",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "Cache read is 0.025x input, as stated in the table. Full 1M context at standard rates."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-fable-5",
+      "input": "10",
+      "output": "50",
+      "cache_read": "1",
+      "cache_write_5m": "12.50",
+      "cache_write_1h": "20",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "Cache read is the standard 0.1x input, as stated in the table. Longer prefixes claude-fable-5-1 and claude-fable-5-2 take precedence."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-mythos-5-2",
+      "input": "8",
+      "output": "40",
+      "cache_read": "0.20",
+      "cache_write_5m": "10",
+      "cache_write_1h": "16",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "Cache read is 0.025x input, as stated in the table. Fast mode costs extra ($16 input, $80 output) and is not modelled here."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-mythos-5-1",
+      "input": "10",
+      "output": "50",
+      "cache_read": "0.25",
+      "cache_write_5m": "12.50",
+      "cache_write_1h": "20",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "Cache read is 0.025x input, as stated in the table."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-mythos-5",
+      "input": "10",
+      "output": "50",
+      "cache_read": "1",
+      "cache_write_5m": "12.50",
+      "cache_write_1h": "20",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "Cache read is the standard 0.1x input. Does not match claude-mythos-preview, which has no price on the page."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-opus-5-5",
+      "input": "4",
+      "output": "20",
+      "cache_read": "0.20",
+      "cache_write_5m": "5",
+      "cache_write_1h": "8",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "Cache read is 0.05x input, as stated in the table. Full 1M context at standard rates. Fast mode costs extra ($8 input, $40 output) and is not modelled here."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-opus-5",
+      "input": "5",
+      "output": "25",
+      "cache_read": "0.50",
+      "cache_write_5m": "6.25",
+      "cache_write_1h": "10",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "Full 1M context at standard rates. Fast mode (research preview) costs extra ($10 input, $50 output) and is not modelled here. The longer prefix claude-opus-5-5 takes precedence."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-opus-4-8",
+      "input": "5",
+      "output": "25",
+      "cache_read": "0.50",
+      "cache_write_5m": "6.25",
+      "cache_write_1h": "10",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "Full 1M context at standard rates. Fast mode (research preview) costs extra ($10 input, $50 output) and is not modelled here."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-opus-4-7",
+      "input": "5",
+      "output": "25",
+      "cache_read": "0.50",
+      "cache_write_5m": "6.25",
+      "cache_write_1h": "10",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "Full 1M context at standard rates."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-opus-4-6",
+      "input": "5",
+      "output": "25",
+      "cache_read": "0.50",
+      "cache_write_5m": "6.25",
+      "cache_write_1h": "10",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "Full 1M context at standard rates."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-opus-4-5",
+      "input": "5",
+      "output": "25",
+      "cache_read": "0.50",
+      "cache_write_5m": "6.25",
+      "cache_write_1h": "10",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "API ID claude-opus-4-5-20251101. Active, retires no sooner than 2026-11-24."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-opus-4-1",
+      "input": "15",
+      "output": "75",
+      "cache_read": "1.50",
+      "cache_write_5m": "18.75",
+      "cache_write_1h": "30",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "API ID claude-opus-4-1-20250805. Retired 2026-08-05, but the page still lists its price. Kept so older logs can be priced."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-opus-4-20250514",
+      "input": "15",
+      "output": "75",
+      "cache_read": "1.50",
+      "cache_write_5m": "18.75",
+      "cache_write_1h": "30",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "Claude Opus 4. Retired 2026-06-15. The full dated ID is the prefix so it can't catch other claude-opus-4-* models priced at $5."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-sonnet-5-5",
+      "input": "2",
+      "output": "10",
+      "cache_read": "0.10",
+      "cache_write_5m": "2.50",
+      "cache_write_1h": "4",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "Cache read is 0.05x input, as stated in the table. Full 1M context at standard rates."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-sonnet-5",
+      "input": "2",
+      "output": "10",
+      "cache_read": "0.20",
+      "cache_write_5m": "2.50",
+      "cache_write_1h": "4",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "Cache read is 0.1x input, unlike Sonnet 5.5. The longer prefix claude-sonnet-5-5 takes precedence. Full 1M context at standard rates."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-sonnet-4-6",
+      "input": "3",
+      "output": "15",
+      "cache_read": "0.30",
+      "cache_write_5m": "3.75",
+      "cache_write_1h": "6",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "Full 1M context at standard rates."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-sonnet-4-5",
+      "input": "3",
+      "output": "15",
+      "cache_read": "0.30",
+      "cache_write_5m": "3.75",
+      "cache_write_1h": "6",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "API ID claude-sonnet-4-5-20250929. Deprecated 2026-09-30, retires 2026-11-30. The page gives no long-context premium for this model (the 1M-at-standard-rates statement covers only 4.6 and later)."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-sonnet-4-20250514",
+      "input": "3",
+      "output": "15",
+      "cache_read": "0.30",
+      "cache_write_5m": "3.75",
+      "cache_write_1h": "6",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "Claude Sonnet 4. Retired 2026-06-15. The full dated ID is the prefix so it can't catch claude-sonnet-4-5 or claude-sonnet-4-6."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-haiku-5-5",
+      "input": "0.10",
+      "output": "0.50",
+      "cache_read": "0.01",
+      "cache_write_5m": "0.125",
+      "cache_write_1h": "0.20",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "These rates are for prompts up to 100K tokens. A request whose prompt is over 100K tokens, counting cache reads and writes, pays $0.50 input, $2.50 output, $0.05 cache read, $0.625 5m write and $1 1h write for the whole request."
+    },
+    {
+      "provider": "anthropic",
+      "model_prefix": "claude-haiku-4-5",
+      "input": "1",
+      "output": "5",
+      "cache_read": "0.10",
+      "cache_write_5m": "1.25",
+      "cache_write_1h": "2",
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "API ID claude-haiku-4-5-20251001. Active, retires no sooner than 2026-10-15 (that date has passed, but the deprecations page still lists it as Active)."
+    }
+  ],
+  "plans": [
+    {
+      "provider": "anthropic",
+      "id": "pro",
+      "price": "20",
+      "capacity": 1,
+      "source": "https://claude.com/pricing",
+      "note": "$20 billed monthly. $17/month with annual billing ($200 up front). Includes Claude Code. Price excludes tax."
+    },
+    {
+      "provider": "anthropic",
+      "id": "max_5x",
+      "price": "100",
+      "capacity": 5,
+      "source": "https://claude.com/pricing",
+      "note": "Marketed as 'Max'. 5x Pro usage every 5 hours and every week. Monthly billing only. Includes $100/month in API credits. The page's internal plan key is max_5x_monthly."
+    },
+    {
+      "provider": "anthropic",
+      "id": "max_20x",
+      "price": "200",
+      "capacity": 10,
+      "source": "https://claude.com/pricing",
+      "note": "Now marketed as 'Ultra'. The page's internal plan key is still max_20x_monthly, and its upgrade link uses plan=max_20x. Anthropic now describes it as 10x Pro weekly usage with no 5-hour limit for verified accounts, not 20x, so capacity is 10. Monthly billing only. Includes $200/month in API credits."
+    }
+  ]
+}
