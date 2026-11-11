@@ -11,6 +11,12 @@ on:
         type: boolean
         default: false
 
+# A newer push to the same branch or pull request makes the run in progress stale, so it is
+# cancelled. A release calls this with its own tag as the ref, so it never cancels another run.
+concurrency:
+  group: check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     strategy:
