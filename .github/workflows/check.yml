@@ -3,20 +3,29 @@ on:
   push:
     branches: [main]
   pull_request:
-  # The release workflow runs the same checks before it builds.
+  # The release workflow runs the same checks before it builds, on macOS only: it ships
+  # only macOS, so an outage on another platform's runners must not block a release.
   workflow_call:
+    inputs:
+      macos-only:
+        type: boolean
+        default: false
 
 jobs:
   check:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        os: ${{ fromJSON(inputs.macos-only && '["macos-latest"]' || '["macos-latest", "windows-latest", "ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
+    # A normal run takes under 5 minutes; a stuck runner fails here instead of hanging for hours.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - name: Install Tauri system libraries
         if: runner.os == 'Linux'
+        # When Ubuntu's package mirrors are unreachable, apt retries for an hour; fail fast.
+        timeout-minutes: 5
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev
@@ -35,6 +44,7 @@ jobs:
 
   deny:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: EmbarkStudios/cargo-deny-action@v2

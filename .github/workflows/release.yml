@@ -63,10 +63,14 @@ jobs:
 
   check:
     uses: ./.github/workflows/check.yml
+    with:
+      macos-only: true
 
   build:
     needs: [verify, check]
     runs-on: macos-latest
+    # Building, signing and notarizing usually takes 15 to 30 minutes.
+    timeout-minutes: 60
     permissions:
       contents: write
     steps:
