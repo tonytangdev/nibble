@@ -49,6 +49,7 @@ nibble, a cheese-loving mouse, eats through a wedge as your usage adds up. It ce
 - **Right-sizing suggestions.** If a smaller plan, or paying the API directly, would have covered your last 30 days, nibble says so. If you keep running into your limits, it suggests a bigger plan. "Not now" quiets a suggestion until next week.
 - **A break-even notification**, once a week, when your plan pays for itself (can be turned off).
 - **Start at login**, light and dark mode.
+- **Updates itself, when you say so.** A dot on the menu bar icon means a new version is ready; the popover offers to install it and restart.
 
 ## How it works
 
@@ -67,7 +68,7 @@ Team and Enterprise seats see their API value, without break-even or suggestions
 
 ## Privacy
 
-nibble runs entirely on your computer and makes no network requests. From Claude Code's logs it keeps only token counts, model names and timestamps, never your prompts or replies. Its own history (hourly totals for about 13 weeks) lives in the app's data folder and can be deleted at any time; nibble rebuilds what it can from the logs.
+nibble runs on your computer, and nothing about your usage leaves it. Its only network request is the update check: at launch and once a day it fetches `latest.json` from this repository's GitHub Releases. Turn that off in Settings with "Check for updates". From Claude Code's logs it keeps only token counts, model names and timestamps, never your prompts or replies. Its own history (hourly totals for about 13 weeks) lives in the app's data folder and can be deleted at any time; nibble rebuilds what it can from the logs.
 
 ## Installation
 
@@ -113,6 +114,8 @@ crates/
 └── nibble-app/        # the Tauri v2 shell: tray icon, popover window, wiring
 ui/                    # the popover, in React; it only draws the View the shell sends
 ```
+
+Releases are built, signed and notarized by CI from a version tag; see [docs/releasing.md](docs/releasing.md).
 
 ## Contributing
 

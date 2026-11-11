@@ -11,13 +11,17 @@ use nibble_core::{CatalogSource, Combined, Inputs, ProviderSource, SourceError, 
 use tauri::{AppHandle, Emitter, Manager, Runtime, State, WindowEvent};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_notification::NotificationExt;
+use tauri_plugin_updater::{Update, UpdaterExt};
 
 use crate::settings::{Settings, StoredDismissal};
 use crate::tray;
-use crate::view::{self, Prompts, Status, View};
+use crate::updates;
+use crate::view::{self, Prompts, Status, Switches, UpdateView, View};
 
 /// How often nibble rereads the logs while idle.
 const REFRESH_EVERY: Duration = Duration::from_secs(60);
+/// How often nibble asks whether an update check is due.
+const UPDATE_TICK: Duration = Duration::from_hours(1);
 /// The event the popover listens to for new views.
 const VIEW_EVENT: &str = "view";
 
@@ -30,6 +34,46 @@ struct Shell {
     subscription: Option<String>,
     /// The start of the current Week.
     week: Option<DateTime<Utc>>,
+    /// When nibble last asked GitHub for a new version, this run.
+    last_update_check: Option<DateTime<Utc>>,
+    /// The newer version found this run, if any.
+    pending: Option<Pending>,
+}
+
+/// A newer version, kept to install it, and how far installing it got.
+struct Pending {
+    update: Update,
+    stage: Stage,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Stage {
+    Found,
+    Installing,
+    Failed,
+}
+
+impl Pending {
+    fn found(update: Update) -> Self {
+        Self {
+            update,
+            stage: Stage::Found,
+        }
+    }
+
+    fn installing(&self) -> bool {
+        self.stage == Stage::Installing
+    }
+
+    fn view(&self) -> UpdateView {
+        match self.stage {
+            Stage::Found => UpdateView::Available {
+                version: self.update.version.clone(),
+            },
+            Stage::Installing => UpdateView::Installing,
+            Stage::Failed => UpdateView::Failed,
+        }
+    }
 }
 
 /// The shell, shared between the refresh thread and command handlers.
@@ -45,18 +89,29 @@ pub(crate) fn run() -> tauri::Result<()> {
         ))
         .plugin(tauri_plugin_positioner::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             let handle = app.handle().clone();
             app.manage(AppState(Mutex::new(new_shell(&handle)?)));
             tray::build(&handle)?;
+            let refresher = handle.clone();
             thread::spawn(move || {
                 loop {
-                    refresh(&handle);
+                    refresh(&refresher);
                     thread::sleep(REFRESH_EVERY);
                 }
             });
+            // Development builds have no release to update to.
+            if !cfg!(debug_assertions) {
+                thread::spawn(move || {
+                    loop {
+                        check_for_update(&handle);
+                        thread::sleep(UPDATE_TICK);
+                    }
+                });
+            }
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -70,6 +125,8 @@ pub(crate) fn run() -> tauri::Result<()> {
             commands::celebrated,
             commands::answer_autostart,
             commands::set_notifications,
+            commands::set_update_checks,
+            commands::install_update,
             commands::quit
         ])
         .run(tauri::generate_context!())
@@ -96,6 +153,8 @@ fn new_shell<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Shell> {
         view: View::default(),
         subscription: None,
         week: None,
+        last_update_check: None,
+        pending: None,
     })
 }
 
@@ -122,8 +181,16 @@ fn refresh<R: Runtime>(app: &AppHandle<R>) {
             ..shell.view.clone()
         },
     };
-    view.notifications_on = !shell.settings.notifications_off;
-    view.autostart_on = app.autolaunch().is_enabled().unwrap_or(false);
+    view.switches = Switches {
+        notifications: !shell.settings.notifications_off,
+        autostart: app.autolaunch().is_enabled().unwrap_or(false),
+        update_checks: !shell.settings.update_checks_off,
+    };
+    // With checks off, a found version stops nagging, but an install under way still shows.
+    view.update = shell.pending.as_ref().map(Pending::view).filter(|update| {
+        view.switches.update_checks || !matches!(update, UpdateView::Available { .. })
+    });
+    tray::badge(app, view.update.is_some());
     shell.view = view.clone();
     drop(shell);
     let _sent = app.emit(VIEW_EVENT, view);
@@ -179,6 +246,69 @@ fn notify_paid_off<R: Runtime>(app: &AppHandle<R>, shell: &mut Shell, view: &Vie
     }
     shell.settings.notified_week = shell.week;
     save(shell);
+}
+
+/// Asks GitHub for a newer version, if a check is due. A failed check stays quiet and is
+/// retried at the next hourly tick.
+fn check_for_update<R: Runtime>(app: &AppHandle<R>) {
+    let state = app.state::<AppState>();
+    let now = Utc::now();
+    // Claim this check before the network call, so a second caller meanwhile skips it.
+    let previous = {
+        let Ok(mut shell) = state.0.lock() else {
+            return;
+        };
+        let checks_on = !shell.settings.update_checks_off;
+        if shell.pending.as_ref().is_some_and(Pending::installing)
+            || !updates::due(shell.last_update_check, now, checks_on)
+        {
+            return;
+        }
+        shell.last_update_check.replace(now)
+    };
+    let found = app
+        .updater()
+        .map(|updater| tauri::async_runtime::block_on(updater.check()));
+    let Ok(mut shell) = state.0.lock() else {
+        return;
+    };
+    let Ok(Ok(found)) = found else {
+        shell.last_update_check = previous;
+        return;
+    };
+    if shell.pending.as_ref().is_some_and(Pending::installing) {
+        return;
+    }
+    shell.pending = found.map(Pending::found);
+    drop(shell);
+    refresh_soon(app);
+}
+
+/// Downloads and installs the update found, then restarts into it.
+fn install_update<R: Runtime>(app: &AppHandle<R>) {
+    let state = app.state::<AppState>();
+    let update = {
+        let Ok(mut shell) = state.0.lock() else {
+            return;
+        };
+        let Some(pending) = shell.pending.as_mut().filter(|p| !p.installing()) else {
+            return;
+        };
+        pending.stage = Stage::Installing;
+        pending.update.clone()
+    };
+    refresh(app);
+    let installed =
+        tauri::async_runtime::block_on(update.download_and_install(|_chunk, _total| {}, || {}));
+    if installed.is_ok() {
+        app.restart();
+    }
+    if let Ok(mut shell) = state.0.lock()
+        && let Some(pending) = shell.pending.as_mut()
+    {
+        pending.stage = Stage::Failed;
+    }
+    refresh(app);
 }
 
 fn save(shell: &Shell) {
@@ -266,6 +396,26 @@ mod commands {
         update(&app, &state, |shell| {
             shell.settings.notifications_off = !on;
         });
+    }
+
+    #[tauri::command]
+    pub(super) fn set_update_checks<R: Runtime>(
+        app: AppHandle<R>,
+        state: State<'_, AppState>,
+        on: bool,
+    ) {
+        update(&app, &state, |shell| {
+            shell.settings.update_checks_off = !on;
+        });
+        // Turning checks back on looks right away, not at the next hourly tick.
+        if on && !cfg!(debug_assertions) {
+            std::thread::spawn(move || super::check_for_update(&app));
+        }
+    }
+
+    #[tauri::command]
+    pub(super) fn install_update<R: Runtime>(app: AppHandle<R>) {
+        std::thread::spawn(move || super::install_update(&app));
     }
 
     #[tauri::command]

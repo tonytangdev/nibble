@@ -11,6 +11,8 @@ export type Command =
   | { name: "celebrated" }
   | { name: "answer_autostart"; enable: boolean }
   | { name: "set_notifications"; on: boolean }
+  | { name: "set_update_checks"; on: boolean }
+  | { name: "install_update" }
   | { name: "quit" };
 
 /**

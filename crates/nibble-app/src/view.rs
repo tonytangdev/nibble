@@ -25,10 +25,34 @@ pub(crate) struct View {
     pub(crate) hours_left: Option<u64>,
     pub(crate) unpriced_responses: u64,
     pub(crate) prompts: Prompts,
-    pub(crate) notifications_on: bool,
-    /// Whether nibble starts when the user logs in.
-    pub(crate) autostart_on: bool,
+    pub(crate) switches: Switches,
+    /// A newer version, once one is found.
+    pub(crate) update: Option<UpdateView>,
     pub(crate) error: Option<String>,
+}
+
+/// Where the Settings switches stand.
+#[derive(Debug, Clone, Copy, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct Switches {
+    /// Whether the Paid off notification is on.
+    pub(crate) notifications: bool,
+    /// Whether nibble starts when the user logs in.
+    pub(crate) autostart: bool,
+    /// Whether nibble looks for new versions.
+    pub(crate) update_checks: bool,
+}
+
+/// Where a newer version of nibble stands.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase", tag = "state")]
+pub(crate) enum UpdateView {
+    /// Found, waiting for the user to install it.
+    Available { version: String },
+    /// Downloading and installing; nibble restarts when done.
+    Installing,
+    /// The install did not finish; the user can try again.
+    Failed,
 }
 
 /// One-off moments the popover should offer.
@@ -142,4 +166,53 @@ fn plan_name(catalog: &PriceCatalog, subscription: &Subscription, plan: &PlanId)
 
 const fn cents(micros: u64) -> u64 {
     micros / 10_000
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::{Value, json};
+
+    use super::{Switches, UpdateView, View};
+
+    fn json_of(view: View) -> Value {
+        serde_json::to_value(view).expect("a View serializes")
+    }
+
+    #[test]
+    fn an_available_update_names_its_version() {
+        let json = json_of(View {
+            update: Some(UpdateView::Available {
+                version: "0.2.0".into(),
+            }),
+            switches: Switches {
+                update_checks: true,
+                ..Switches::default()
+            },
+            ..View::default()
+        });
+        assert_eq!(
+            json["update"],
+            json!({ "state": "available", "version": "0.2.0" })
+        );
+        assert_eq!(json["switches"]["updateChecks"], json!(true));
+    }
+
+    #[test]
+    fn installing_and_failed_updates_carry_only_their_state() {
+        let installing = json_of(View {
+            update: Some(UpdateView::Installing),
+            ..View::default()
+        });
+        let failed = json_of(View {
+            update: Some(UpdateView::Failed),
+            ..View::default()
+        });
+        assert_eq!(installing["update"], json!({ "state": "installing" }));
+        assert_eq!(failed["update"], json!({ "state": "failed" }));
+    }
+
+    #[test]
+    fn no_update_is_null() {
+        assert_eq!(json_of(View::default())["update"], Value::Null);
+    }
 }

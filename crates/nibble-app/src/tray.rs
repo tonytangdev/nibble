@@ -3,6 +3,8 @@
 //! When the Wedge changes, the icon glides to the new one through a strip of fine frames:
 //! the wedge shrinks a percent at a time, fades into crumbs, then into the paid-off
 //! outline as its check draws in. It plays backwards when the week resets.
+//!
+//! A dot in the top-left corner, where every frame is empty, says a new version is ready.
 
 use std::sync::Mutex;
 use std::thread;
@@ -39,6 +41,8 @@ struct Goal {
     frame: Option<usize>,
     /// The Multiplier label, shown once the icon arrives.
     title: Option<String>,
+    /// Whether to show the update dot.
+    badge: bool,
 }
 
 /// The animator's goal, shared with the refresh thread.
@@ -118,6 +122,13 @@ pub(crate) fn show<R: Runtime>(app: &AppHandle<R>, combined: &Combined) -> tauri
     tray.set_tooltip(Some(tooltip))
 }
 
+/// Shows or hides the dot that says a new version is ready.
+pub(crate) fn badge<R: Runtime>(app: &AppHandle<R>, on: bool) {
+    if let Ok(mut goal) = app.state::<Animation>().0.lock() {
+        goal.badge = on;
+    }
+}
+
 /// Resting frames in the strip.
 const FULL: usize = 0;
 const TWO_THIRDS: usize = 34;
@@ -153,20 +164,28 @@ fn frames() -> tauri::Result<Vec<Image<'static>>> {
 fn animate<R: Runtime>(app: &AppHandle<R>, frames: &[Image<'static>]) {
     let mut shown = 0;
     let mut titled = None;
+    let mut badged = false;
     loop {
-        let (target, title) = app
+        let (target, title, badge) = app
             .state::<Animation>()
             .0
             .lock()
-            .map(|goal| (goal.frame, goal.title.clone()))
+            .map(|goal| (goal.frame, goal.title.clone(), goal.badge))
             .unwrap_or_default();
         let Some(target) = target else {
             thread::sleep(TICK);
             continue;
         };
         if shown != target {
-            glide(app, frames, shown, target);
+            glide(app, frames, shown, target, badge);
             shown = target;
+            badged = badge;
+        }
+        if badged != badge {
+            if let Some(image) = frames.get(shown) {
+                let _drawn = draw(app, image, badge);
+            }
+            badged = badge;
         }
         if titled.as_ref() != Some(&title) {
             if let Some(tray) = app.tray_by_id(ID) {
@@ -180,7 +199,13 @@ fn animate<R: Runtime>(app: &AppHandle<R>, frames: &[Image<'static>]) {
 
 /// Moves the icon from frame `from` to `to`, easing in and out over a time that grows
 /// with the distance.
-fn glide<R: Runtime>(app: &AppHandle<R>, frames: &[Image<'static>], from: usize, to: usize) {
+fn glide<R: Runtime>(
+    app: &AppHandle<R>,
+    frames: &[Image<'static>],
+    from: usize,
+    to: usize,
+    badge: bool,
+) {
     let distance = from.abs_diff(to);
     let millis = (600 + 4 * u64::try_from(distance).unwrap_or(0)).min(1_500);
     let start = Instant::now();
@@ -192,7 +217,7 @@ fn glide<R: Runtime>(app: &AppHandle<R>, frames: &[Image<'static>], from: usize,
         let frame = if from < to { from + step } else { from - step };
         if drawn != Some(frame) {
             if let Some(image) = frames.get(frame) {
-                let _drawn = draw(app, image);
+                let _drawn = draw(app, image, badge);
             }
             drawn = Some(frame);
         }
@@ -213,10 +238,45 @@ const fn eased(t: u64) -> u64 {
     }
 }
 
-fn draw<R: Runtime>(app: &AppHandle<R>, image: &Image<'static>) -> tauri::Result<()> {
+fn draw<R: Runtime>(app: &AppHandle<R>, image: &Image<'static>, badge: bool) -> tauri::Result<()> {
     let Some(tray) = app.tray_by_id(ID) else {
         return Ok(());
     };
+    let image = if badge {
+        Image::new_owned(with_dot(image.rgba()), SIDE, SIDE)
+    } else {
+        image.clone()
+    };
     // One call: setting the image and then the template flag flashes the raw black image.
-    tray.set_icon_with_as_template(Some(image.clone()), true)
+    tray.set_icon_with_as_template(Some(image), true)
+}
+
+/// The dot's centre and radius, in eighths of a pixel: 5 points wide at 2x, its edge a
+/// point clear of the frame's top and left.
+const DOT_CENTRE: u32 = 6 * 8;
+const DOT_RADIUS: u32 = 5 * 8;
+
+/// `frame` with the update dot stamped in its top-left corner. Each pixel's opacity is the
+/// share of its 16 sample points inside the circle, so the edge stays smooth.
+fn with_dot(frame: &[u8]) -> Vec<u8> {
+    let mut out = frame.to_vec();
+    for (index, pixel) in out.as_chunks_mut::<4>().0.iter_mut().enumerate() {
+        let index = u32::try_from(index).unwrap_or(u32::MAX);
+        let (x, y) = (index % SIDE, index / SIDE);
+        let mut inside = 0;
+        for sx in 0..4 {
+            for sy in 0..4 {
+                let dx = (8 * x + 1 + 2 * sx).abs_diff(DOT_CENTRE);
+                let dy = (8 * y + 1 + 2 * sy).abs_diff(DOT_CENTRE);
+                if dx * dx + dy * dy <= DOT_RADIUS * DOT_RADIUS {
+                    inside += 1;
+                }
+            }
+        }
+        let alpha = u8::try_from(inside * 255 / 16).unwrap_or(u8::MAX);
+        if alpha > pixel[3] {
+            *pixel = [0, 0, 0, alpha];
+        }
+    }
+    out
 }
