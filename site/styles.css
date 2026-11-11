@@ -173,7 +173,6 @@ a:hover {
 /* Header */
 .top {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem 1.5rem;
@@ -211,6 +210,14 @@ a:hover {
   padding-block: 0.5rem;
   color: var(--soft);
   text-decoration: none;
+}
+
+/* A phone has room for the wordmark and two links on one line. The page is one scroll long,
+   so the link to its second section is the one to go. */
+@media (max-width: 29.99rem) {
+  .top nav a[href="#how"] {
+    display: none;
+  }
 }
 
 .top nav a:hover {
@@ -270,14 +277,59 @@ a:hover {
 /* Hero */
 .hero {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: clamp(2.5rem, 6vw, 4rem);
   align-items: center;
   padding-block: clamp(2rem, 6vw, 4.5rem) clamp(3rem, 7vw, 5.5rem);
 }
 
+/* Side by side, the heading is sized to its column so it sets in three lines, the last one
+   "paying for itself?", and the scene gives it a little of its width. */
 @media (min-width: 56rem) {
   .hero {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) 27rem;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.25rem, 4.5vw, 3.9rem);
+  }
+}
+
+/* In one column the app comes first: the question, then nibble's popover answering it, both
+   on the first screen of a phone. The pitch's box is dissolved so the scene can sit between
+   the heading and the rest. The scene holds nothing focusable, so the tab order is unchanged. */
+@media (max-width: 55.99rem) {
+  .hero {
+    gap: 0;
+    padding-top: 0.75rem;
+  }
+
+  .pitch {
+    display: contents;
+  }
+
+  .hero h1 {
+    font-size: clamp(2rem, 9vw, 3.5rem);
+  }
+
+  .hero .scene {
+    order: 1;
+    margin-top: 1.25rem;
+  }
+
+  .pitch > :not(h1) {
+    order: 2;
+  }
+
+  .hero .popover .stage {
+    height: 150px;
+    padding-block: 12px 10px;
+  }
+}
+
+@media (max-width: 29.99rem) {
+  .cta .button {
+    flex: 1 1 auto;
   }
 }
 
@@ -326,6 +378,18 @@ a:hover {
   color: var(--on-accent);
   background: var(--accent-strong);
   border-color: var(--accent-strong);
+}
+
+/* For a visitor who cannot install nibble where they are reading: a phone or a tablet. */
+.handoff {
+  display: none;
+  margin-top: 0.35rem;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .handoff {
+    display: block;
+  }
 }
 
 /* The scene: a slice of desktop with the menu bar and nibble's popover open under it. */
@@ -638,6 +702,39 @@ figcaption {
   border-radius: 18px;
 }
 
+/* On a phone each mood is a row, nibble on the left and the words beside it, so all four
+   fit in about one screen. */
+@media (max-width: 33.99rem) {
+  .moods {
+    gap: 1.25rem;
+  }
+
+  .moods li {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr);
+    column-gap: 1rem;
+    align-content: center;
+  }
+
+  .moods .stage {
+    grid-row: span 2;
+    height: 7rem;
+    margin-bottom: 0;
+    padding: 0.75rem 0 0.6rem;
+    border-radius: 14px;
+  }
+
+  .moods h3 {
+    align-self: end;
+  }
+
+  .moods p {
+    margin-top: 0.25rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+}
+
 .moods .sleepy .stage {
   background: var(--stage-sleepy);
 }
@@ -712,6 +809,14 @@ figcaption {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem 1.5rem;
+}
+
+@media (max-width: 33.99rem) {
+  .wedges ul {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem 0.5rem;
+  }
 }
 
 .wedges li {
