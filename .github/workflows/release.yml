@@ -62,7 +62,7 @@ jobs:
           exit "$missing"
 
   check:
-    uses: ./.github/workflows/check.yml
+    uses: ./.github/workflows/app-checks.yml
     with:
       macos-only: true
 

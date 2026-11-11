@@ -1,7 +1,9 @@
 name: site
 # Deploys the landing page to Cloudflare Workers (nibble.tonytang.dev) when something the
 # page is built from changes on main, and when a release is published, as the page lists the
-# latest release's files. `wrangler.jsonc` holds the Worker's settings.
+# latest release's files. `wrangler.jsonc` holds the Worker's settings. The site's checks
+# (`pnpm site:check`, which ends with the build) must pass before it deploys; pull requests
+# get the same checks from `check.yml`.
 on:
   push:
     branches: [main]
@@ -12,6 +14,9 @@ on:
       - wrangler.jsonc
       - package.json
       - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - tsconfig.json
+      - eslint.config.js
       - .github/workflows/site.yml
   release:
     types: [published]
@@ -34,7 +39,7 @@ jobs:
           node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm site:build
+      - run: pnpm site:check
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - run: npx --yes wrangler@4.160.1 deploy
