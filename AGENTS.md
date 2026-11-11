@@ -16,7 +16,7 @@ The section is done when every Rust concept in the diff that this conversation h
 
 Dependencies point inward. The crate boundaries enforce this, so the compiler rejects an import that goes the wrong way.
 
-- `crates/nibble-core`: the domain (plans, usage, pricing, break-even, mood) and the **ports** (traits for anything outside: the usage source, the price catalog, plan detection, the clock). It stays pure: no file system, network, environment or wall clock. Its own `clippy.toml` bans those APIs. When that lint fires, add a port.
+- `crates/nibble-core`: the domain (plans, usage, pricing, break-even, mood) and the **ports** (traits for anything outside: each Provider's usage and account, the price catalog). It stays pure: no file system, network, environment or wall clock. The current time arrives as a value in `Inputs`. Its own `clippy.toml` bans those APIs. When that lint fires, add a port.
 - `crates/nibble-adapters`: implements the ports, for example the Claude Code log reader. It depends on core, never the other way round.
 - The app shell (Tauri v2, not scaffolded yet) connects the adapters to core and renders the UI. It contains no business logic.
 

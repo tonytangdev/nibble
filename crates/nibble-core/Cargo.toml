@@ -9,6 +9,8 @@ license.workspace = true
 
 # Keep this crate free of IO dependencies; see AGENTS.md.
 [dependencies]
+# Calendar math only; the "clock" feature (wall-clock access) stays off on purpose.
+chrono = { version = "0.4", default-features = false, features = ["std"] }
 
 [lints]
 workspace = true

@@ -41,7 +41,7 @@ The next step up from the current Plan, when one exists.
 ## Usage and value
 
 **Usage record**:
-One model response's token counts, split by token kind, with its model and time.
+Token counts by Token kind for one model, covering one response or a day's worth of them.
 _Avoid_: event, request, log line
 
 **Token kind**:
