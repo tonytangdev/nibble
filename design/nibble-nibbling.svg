@@ -1,10 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 200">
-<path d="M142 166 C188 172 198 128 176 112" stroke="oklch(0.42 0.085 197)" stroke-width="5" fill="none" stroke-linecap="round"/>
+<g class="nb-mouse">
+<path class="nb-tail" d="M142 166 C188 172 198 128 176 112" stroke="oklch(0.42 0.085 197)" stroke-width="5" fill="none" stroke-linecap="round"/>
 <ellipse cx="80" cy="182" rx="13" ry="6" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="2.5"/>
 <ellipse cx="120" cy="182" rx="13" ry="6" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="2.5"/>
 <ellipse cx="100" cy="148" rx="46" ry="36" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="3"/>
 
-<g transform="rotate(0 100 95)">
+<g class="nb-head"><g transform="rotate(0 100 95)">
 <circle cx="64" cy="60" r="22" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="3"/><circle cx="64" cy="60" r="12" fill="oklch(0.83 0.07 25)"/>
 <circle cx="136" cy="60" r="22" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="3"/><circle cx="136" cy="60" r="12" fill="oklch(0.83 0.07 25)"/>
 <circle cx="100" cy="96" r="40" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="3"/>
@@ -12,13 +13,14 @@
 <path d="M72 91 L61 87 M128 91 L139 87" stroke="oklch(0.17 0.022 200)" stroke-width="3" stroke-linecap="round"/>
 <path d="M95 92 Q100 87 105 92" stroke="oklch(0.17 0.022 200)" stroke-width="3" fill="none" stroke-linecap="round"/>
 <circle cx="84" cy="94" r="12.5" fill="oklch(0.17 0.022 200)"/><circle cx="116" cy="94" r="12.5" fill="oklch(0.17 0.022 200)"/>
-<circle cx="82" cy="96" r="4.6" fill="oklch(0.86 0.16 92)"/><circle cx="114" cy="96" r="4.6" fill="oklch(0.86 0.16 92)"/>
+<g class="nb-eyes"><circle cx="82" cy="96" r="4.6" fill="oklch(0.86 0.16 92)"/><circle cx="114" cy="96" r="4.6" fill="oklch(0.86 0.16 92)"/></g>
 <circle cx="100" cy="112" r="4.2" fill="oklch(0.83 0.07 25)" stroke="oklch(0.17 0.022 200)" stroke-width="1.6"/>
 <path d="M90 115 L64 110 M90 118 L64 121 M110 115 L136 110 M110 118 L136 121" stroke="oklch(0.17 0.022 200)" stroke-width="1.4" opacity=".55" stroke-linecap="round"/>
-<path d="M94 122 Q97 125 100 122 Q103 125 106 122" stroke="oklch(0.17 0.022 200)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-</g>
-<ellipse cx="88" cy="138" rx="8" ry="6.5" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="2.5"/><ellipse cx="112" cy="138" rx="8" ry="6.5" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="2.5"/>
+<path class="nb-chew" d="M94 122 Q97 125 100 122 Q103 125 106 122" stroke="oklch(0.17 0.022 200)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+</g></g>
+<g class="nb-snack"><ellipse cx="88" cy="138" rx="8" ry="6.5" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="2.5"/><ellipse cx="112" cy="138" rx="8" ry="6.5" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="2.5"/>
 <mask id="bn"><rect width="220" height="200" fill="white"/><circle cx="84" cy="128" r="9" fill="black"/><circle cx="94" cy="124" r="7" fill="black"/></mask>
 <g mask="url(#bn)"><path d="M80 150 L128 150 L128 124 Z" fill="oklch(0.86 0.16 92)" stroke="oklch(0.17 0.022 200)" stroke-width="3" stroke-linejoin="round"/>
 <circle cx="118" cy="143" r="3.5" fill="oklch(0.72 0.15 82)"/><circle cx="123" cy="134" r="2" fill="oklch(0.72 0.15 82)"/></g>
-<rect x="70" y="160" width="4" height="4" fill="oklch(0.86 0.16 92)" transform="rotate(20 72 162)"/><rect x="132" y="168" width="3" height="3" fill="oklch(0.86 0.16 92)"/></svg>
+<rect x="70" y="160" width="4" height="4" fill="oklch(0.86 0.16 92)" transform="rotate(20 72 162)"/><rect x="132" y="168" width="3" height="3" fill="oklch(0.86 0.16 92)"/></g>
+</g></svg>

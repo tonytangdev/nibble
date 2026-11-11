@@ -6,7 +6,7 @@ PINK="oklch(0.83 0.07 25)"; PAPER="oklch(0.986 0.006 190)"
 
 def eyes(kind, dx=0, dy=0):
     if kind=="open":
-        return f'<circle cx="{84+dx}" cy="{93+dy}" r="4.6" fill="{POP}"/><circle cx="{116+dx}" cy="{93+dy}" r="4.6" fill="{POP}"/>'
+        return f'<g class="nb-eyes"><circle cx="{84+dx}" cy="{93+dy}" r="4.6" fill="{POP}"/><circle cx="{116+dx}" cy="{93+dy}" r="4.6" fill="{POP}"/></g>'
     if kind=="closed":
         return f'<path d="M77 95 Q84 100 91 95 M109 95 Q116 100 123 95" stroke="{POP}" stroke-width="2.8" fill="none" stroke-linecap="round"/>'
     if kind=="happy":
@@ -14,21 +14,22 @@ def eyes(kind, dx=0, dy=0):
 
 def mouse(eye="open", dx=0, dy=0, mouth="smile", paws="rest", cheeks=False, back="", front="", tilt=0):
     m = {"smile": f'<path d="M93 121 Q100 128 107 121" stroke="{INK}" stroke-width="2.4" fill="none" stroke-linecap="round"/>',
-         "o": f'<ellipse cx="100" cy="123" rx="3" ry="3.6" fill="{INK}"/>',
-         "chew": f'<path d="M94 122 Q97 125 100 122 Q103 125 106 122" stroke="{INK}" stroke-width="2.2" fill="none" stroke-linecap="round"/>',
+         "o": f'<ellipse class="nb-o" cx="100" cy="123" rx="3" ry="3.6" fill="{INK}"/>',
+         "chew": f'<path class="nb-chew" d="M94 122 Q97 125 100 122 Q103 125 106 122" stroke="{INK}" stroke-width="2.2" fill="none" stroke-linecap="round"/>',
          "big": f'<path d="M90 119 Q100 134 110 119 Z" fill="{INK}"/><path d="M95 125 Q100 129 105 125" fill="{PINK}"/>'}[mouth]
     p = {"rest": f'<ellipse cx="80" cy="142" rx="9" ry="7" fill="{CREAM}" stroke="{INK}" stroke-width="2.5"/><ellipse cx="120" cy="142" rx="9" ry="7" fill="{CREAM}" stroke="{INK}" stroke-width="2.5"/>',
-         "up": f'<path d="M66 132 Q52 118 50 100 M134 132 Q148 118 150 100" stroke="{INK}" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M66 132 Q52 118 50 100 M134 132 Q148 118 150 100" stroke="{CREAM}" stroke-width="7" fill="none" stroke-linecap="round"/>',
+         "up": f'<g class="nb-arms"><path d="M66 132 Q52 118 50 100 M134 132 Q148 118 150 100" stroke="{INK}" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M66 132 Q52 118 50 100 M134 132 Q148 118 150 100" stroke="{CREAM}" stroke-width="7" fill="none" stroke-linecap="round"/></g>',
          "hold": f'<ellipse cx="88" cy="138" rx="8" ry="6.5" fill="{CREAM}" stroke="{INK}" stroke-width="2.5"/><ellipse cx="112" cy="138" rx="8" ry="6.5" fill="{CREAM}" stroke="{INK}" stroke-width="2.5"/>'}[paws]
     ck = f'<circle cx="72" cy="112" r="7" fill="{PINK}" opacity=".6"/><circle cx="128" cy="112" r="7" fill="{PINK}" opacity=".6"/>' if cheeks else ""
     holdfront = paws=="hold"
     return f'''{back}
-<path d="M142 166 C188 172 198 128 176 112" stroke="{TEAL}" stroke-width="5" fill="none" stroke-linecap="round"/>
+<g class="nb-mouse">
+<path class="nb-tail" d="M142 166 C188 172 198 128 176 112" stroke="{TEAL}" stroke-width="5" fill="none" stroke-linecap="round"/>
 <ellipse cx="80" cy="182" rx="13" ry="6" fill="{CREAM}" stroke="{INK}" stroke-width="2.5"/>
 <ellipse cx="120" cy="182" rx="13" ry="6" fill="{CREAM}" stroke="{INK}" stroke-width="2.5"/>
 <ellipse cx="100" cy="148" rx="46" ry="36" fill="{CREAM}" stroke="{INK}" stroke-width="3"/>
 {"" if holdfront else p}
-<g transform="rotate({tilt} 100 95)">
+<g class="nb-head"><g transform="rotate({tilt} 100 95)">
 <circle cx="64" cy="60" r="22" fill="{CREAM}" stroke="{INK}" stroke-width="3"/><circle cx="64" cy="60" r="12" fill="{PINK}"/>
 <circle cx="136" cy="60" r="22" fill="{CREAM}" stroke="{INK}" stroke-width="3"/><circle cx="136" cy="60" r="12" fill="{PINK}"/>
 <circle cx="100" cy="96" r="40" fill="{CREAM}" stroke="{INK}" stroke-width="3"/>
@@ -40,16 +41,17 @@ def mouse(eye="open", dx=0, dy=0, mouth="smile", paws="rest", cheeks=False, back
 <circle cx="100" cy="112" r="4.2" fill="{PINK}" stroke="{INK}" stroke-width="1.6"/>
 <path d="M90 115 L64 110 M90 118 L64 121 M110 115 L136 110 M110 118 L136 121" stroke="{INK}" stroke-width="1.4" opacity=".55" stroke-linecap="round"/>
 {m}
-</g>
-{p if holdfront else ""}
-{front}'''
+</g></g>
+<g class="nb-snack">{p if holdfront else ""}
+{front}</g>
+</g>'''
 
 def cheese_wheel():
-    return f'''<g><path d="M150 186 L214 186 L214 150 Z" fill="{POP}" stroke="{INK}" stroke-width="3" stroke-linejoin="round"/>
+    return f'''<g class="nb-wheel"><path d="M150 186 L214 186 L214 150 Z" fill="{POP}" stroke="{INK}" stroke-width="3" stroke-linejoin="round"/>
 <circle cx="200" cy="176" r="5" fill="{POPD}"/><circle cx="186" cy="180" r="3" fill="{POPD}"/><circle cx="206" cy="163" r="3" fill="{POPD}"/></g>'''
 
 def zzz():
-    return f'<g fill="{INK}" font-family="system-ui" font-weight="800" opacity=".55"><text x="146" y="44" font-size="20">z</text><text x="162" y="28" font-size="14">z</text><text x="174" y="16" font-size="10">z</text></g>'
+    return f'<g fill="{INK}" font-family="system-ui" font-weight="800" opacity=".55"><text class="nb-z" x="146" y="44" font-size="20">z</text><text class="nb-z" x="162" y="28" font-size="14">z</text><text class="nb-z" x="174" y="16" font-size="10">z</text></g>'
 
 def held_cheese(uid):
     return f'''<mask id="b{uid}"><rect width="220" height="200" fill="white"/><circle cx="84" cy="128" r="9" fill="black"/><circle cx="94" cy="124" r="7" fill="black"/></mask>
@@ -58,17 +60,17 @@ def held_cheese(uid):
 <rect x="70" y="160" width="4" height="4" fill="{POP}" transform="rotate(20 72 162)"/><rect x="132" y="168" width="3" height="3" fill="{POP}"/>'''
 
 def party():
-    sp = lambda x,y,s: f'<path d="M{x} {y-s} L{x+s*.3} {y-s*.3} L{x+s} {y} L{x+s*.3} {y+s*.3} L{x} {y+s} L{x-s*.3} {y+s*.3} L{x-s} {y} L{x-s*.3} {y-s*.3} Z" fill="{POP}"/>'
-    crumbs = "".join(f'<rect x="{x}" y="{y}" width="4" height="4" fill="{POP}" transform="rotate({r} {x} {y})"/>' for x,y,r in [(56,188,15),(146,190,40),(160,184,10),(40,182,30),(170,192,60)])
+    sp = lambda x,y,s: f'<path class="nb-spark" d="M{x} {y-s} L{x+s*.3} {y-s*.3} L{x+s} {y} L{x+s*.3} {y+s*.3} L{x} {y+s} L{x-s*.3} {y+s*.3} L{x-s} {y} L{x-s*.3} {y-s*.3} Z" fill="{POP}"/>'
+    crumbs = "".join(f'<rect class="nb-crumb" x="{x}" y="{y}" width="4" height="4" fill="{POP}" transform="rotate({r} {x} {y})"/>' for x,y,r in [(56,188,15),(146,190,40),(160,184,10),(40,182,30),(170,192,60)])
     return sp(30,40,10)+sp(186,60,8)+sp(24,120,6)+sp(196,140,11)+crumbs
 
 def plate():
-    return f'''<ellipse cx="100" cy="134" rx="30" ry="7" fill="white" stroke="{INK}" stroke-width="2.5"/><ellipse cx="100" cy="133" rx="18" ry="3.5" fill="none" stroke="{INK}" stroke-width="1.2" opacity=".4"/>
-<rect x="104" y="128" width="3" height="3" fill="{POP}"/>'''
+    return f'''<g class="nb-plate"><ellipse cx="100" cy="134" rx="30" ry="7" fill="white" stroke="{INK}" stroke-width="2.5"/><ellipse cx="100" cy="133" rx="18" ry="3.5" fill="none" stroke="{INK}" stroke-width="1.2" opacity=".4"/>
+<rect x="104" y="128" width="3" height="3" fill="{POP}"/></g>'''
 
 def bubble(text, x, y, w, dark=False):
     bg, fg = (CREAM, TEALD) if dark else ("white", INK)
-    return f'<g><rect x="{x}" y="{y}" width="{w}" height="30" rx="14" fill="{bg}" stroke="{INK}" stroke-width="2.5"/><text x="{x+w/2}" y="{y+20}" text-anchor="middle" font-family="Bricolage Grotesque, system-ui" font-weight="800" font-size="15" fill="{fg}">{text}</text></g>'
+    return f'<g class="nb-bubble"><rect x="{x}" y="{y}" width="{w}" height="30" rx="14" fill="{bg}" stroke="{INK}" stroke-width="2.5"/><text x="{x+w/2}" y="{y+20}" text-anchor="middle" font-family="Bricolage Grotesque, system-ui" font-weight="800" font-size="15" fill="{fg}">{text}</text></g>'
 
 svg = lambda body, vb="0 0 220 200": f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{vb}">{body}</svg>'
 
@@ -148,3 +150,29 @@ os.makedirs(os.path.join(OUT, "menubar"), exist_ok=True)
 for name, svgtxt in [("wedge-100", wedge(1,"a")), ("wedge-66", wedge(.66,"b")), ("wedge-33", wedge(.33,"c")), ("crumbs", crumbs()), ("paid-off", paid())]:
     open(os.path.join(OUT, "menubar", f"{name}.svg"), "w").write(svgtxt.replace("currentColor", "#000"))
 print("ok")
+
+
+# Menu bar animation strip: every frame the icon passes through when the Wedge changes,
+# stacked top to bottom in one SVG (20 units per frame). The wedge shrinks 1% per frame from
+# whole to 11%, crossfades into crumbs, crossfades into the paid-off outline, and the check
+# draws in. Rest frames: whole 0, two-thirds 34, one-third 67, crumbs 95, paid off 111.
+def inner(svgtxt):
+    return svgtxt.split(">", 1)[1].rsplit("</svg>", 1)[0]
+
+def layer(svgtxt, opacity=1.0):
+    return f'<g opacity="{opacity:.3f}">{inner(svgtxt)}</g>'
+
+def paid_drawing(left):
+    return paid().replace('stroke-linejoin="round"/></svg>', f'stroke-linejoin="round" stroke-dasharray="7.2" stroke-dashoffset="{left:.2f}"/></svg>')
+
+strip = [layer(wedge(p / 100, f"s{p}")) for p in range(100, 10, -1)]
+last_wedge = wedge(11 / 100, "x")
+strip += [layer(last_wedge, 1 - k / 6) + layer(crumbs(), k / 6) for k in range(1, 6)]
+strip += [layer(crumbs())]
+strip += [layer(crumbs(), 1 - k / 6) + layer(paid_drawing(7.2), k / 6) for k in range(1, 6)]
+strip += [layer(paid_drawing(7.2 * (1 - k / 10))) for k in range(0, 10)]
+strip += [layer(paid())]
+frames_svg = "".join(f'<svg x="0" y="{20 * i}" width="20" height="20" viewBox="0 0 20 20">{body}</svg>' for i, body in enumerate(strip))
+open(os.path.join(OUT, "menubar", "strip.svg"), "w").write(
+    f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 {20 * len(strip)}">{frames_svg}</svg>'.replace("currentColor", "#000"))
+print(f"strip: {len(strip)} frames")

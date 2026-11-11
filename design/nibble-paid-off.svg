@@ -1,10 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 200">
-<path d="M142 166 C188 172 198 128 176 112" stroke="oklch(0.42 0.085 197)" stroke-width="5" fill="none" stroke-linecap="round"/>
+<g class="nb-mouse">
+<path class="nb-tail" d="M142 166 C188 172 198 128 176 112" stroke="oklch(0.42 0.085 197)" stroke-width="5" fill="none" stroke-linecap="round"/>
 <ellipse cx="80" cy="182" rx="13" ry="6" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="2.5"/>
 <ellipse cx="120" cy="182" rx="13" ry="6" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="2.5"/>
 <ellipse cx="100" cy="148" rx="46" ry="36" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="3"/>
-<path d="M66 132 Q52 118 50 100 M134 132 Q148 118 150 100" stroke="oklch(0.17 0.022 200)" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M66 132 Q52 118 50 100 M134 132 Q148 118 150 100" stroke="oklch(0.96 0.025 95)" stroke-width="7" fill="none" stroke-linecap="round"/>
-<g transform="rotate(0 100 95)">
+<g class="nb-arms"><path d="M66 132 Q52 118 50 100 M134 132 Q148 118 150 100" stroke="oklch(0.17 0.022 200)" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M66 132 Q52 118 50 100 M134 132 Q148 118 150 100" stroke="oklch(0.96 0.025 95)" stroke-width="7" fill="none" stroke-linecap="round"/></g>
+<g class="nb-head"><g transform="rotate(0 100 95)">
 <circle cx="64" cy="60" r="22" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="3"/><circle cx="64" cy="60" r="12" fill="oklch(0.83 0.07 25)"/>
 <circle cx="136" cy="60" r="22" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="3"/><circle cx="136" cy="60" r="12" fill="oklch(0.83 0.07 25)"/>
 <circle cx="100" cy="96" r="40" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="3"/>
@@ -16,6 +17,7 @@
 <circle cx="100" cy="112" r="4.2" fill="oklch(0.83 0.07 25)" stroke="oklch(0.17 0.022 200)" stroke-width="1.6"/>
 <path d="M90 115 L64 110 M90 118 L64 121 M110 115 L136 110 M110 118 L136 121" stroke="oklch(0.17 0.022 200)" stroke-width="1.4" opacity=".55" stroke-linecap="round"/>
 <path d="M90 119 Q100 134 110 119 Z" fill="oklch(0.17 0.022 200)"/><path d="M95 125 Q100 129 105 125" fill="oklch(0.83 0.07 25)"/>
-</g>
-
-<path d="M30 30 L33.0 37.0 L40 40 L33.0 43.0 L30 50 L27.0 43.0 L20 40 L27.0 37.0 Z" fill="oklch(0.86 0.16 92)"/><path d="M186 52 L188.4 57.6 L194 60 L188.4 62.4 L186 68 L183.6 62.4 L178 60 L183.6 57.6 Z" fill="oklch(0.86 0.16 92)"/><path d="M24 114 L25.8 118.2 L30 120 L25.8 121.8 L24 126 L22.2 121.8 L18 120 L22.2 118.2 Z" fill="oklch(0.86 0.16 92)"/><path d="M196 129 L199.3 136.7 L207 140 L199.3 143.3 L196 151 L192.7 143.3 L185 140 L192.7 136.7 Z" fill="oklch(0.86 0.16 92)"/><rect x="56" y="188" width="4" height="4" fill="oklch(0.86 0.16 92)" transform="rotate(15 56 188)"/><rect x="146" y="190" width="4" height="4" fill="oklch(0.86 0.16 92)" transform="rotate(40 146 190)"/><rect x="160" y="184" width="4" height="4" fill="oklch(0.86 0.16 92)" transform="rotate(10 160 184)"/><rect x="40" y="182" width="4" height="4" fill="oklch(0.86 0.16 92)" transform="rotate(30 40 182)"/><rect x="170" y="192" width="4" height="4" fill="oklch(0.86 0.16 92)" transform="rotate(60 170 192)"/><g><rect x="62" y="4" width="96" height="30" rx="14" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="2.5"/><text x="110.0" y="24" text-anchor="middle" font-family="Bricolage Grotesque, system-ui" font-weight="800" font-size="15" fill="oklch(0.34 0.08 202)">paid off!</text></g></svg>
+</g></g>
+<g class="nb-snack">
+<path class="nb-spark" d="M30 30 L33.0 37.0 L40 40 L33.0 43.0 L30 50 L27.0 43.0 L20 40 L27.0 37.0 Z" fill="oklch(0.86 0.16 92)"/><path class="nb-spark" d="M186 52 L188.4 57.6 L194 60 L188.4 62.4 L186 68 L183.6 62.4 L178 60 L183.6 57.6 Z" fill="oklch(0.86 0.16 92)"/><path class="nb-spark" d="M24 114 L25.8 118.2 L30 120 L25.8 121.8 L24 126 L22.2 121.8 L18 120 L22.2 118.2 Z" fill="oklch(0.86 0.16 92)"/><path class="nb-spark" d="M196 129 L199.3 136.7 L207 140 L199.3 143.3 L196 151 L192.7 143.3 L185 140 L192.7 136.7 Z" fill="oklch(0.86 0.16 92)"/><rect class="nb-crumb" x="56" y="188" width="4" height="4" fill="oklch(0.86 0.16 92)" transform="rotate(15 56 188)"/><rect class="nb-crumb" x="146" y="190" width="4" height="4" fill="oklch(0.86 0.16 92)" transform="rotate(40 146 190)"/><rect class="nb-crumb" x="160" y="184" width="4" height="4" fill="oklch(0.86 0.16 92)" transform="rotate(10 160 184)"/><rect class="nb-crumb" x="40" y="182" width="4" height="4" fill="oklch(0.86 0.16 92)" transform="rotate(30 40 182)"/><rect class="nb-crumb" x="170" y="192" width="4" height="4" fill="oklch(0.86 0.16 92)" transform="rotate(60 170 192)"/><g class="nb-bubble"><rect x="62" y="4" width="96" height="30" rx="14" fill="oklch(0.96 0.025 95)" stroke="oklch(0.17 0.022 200)" stroke-width="2.5"/><text x="110.0" y="24" text-anchor="middle" font-family="Bricolage Grotesque, system-ui" font-weight="800" font-size="15" fill="oklch(0.34 0.08 202)">paid off!</text></g></g>
+</g></svg>
