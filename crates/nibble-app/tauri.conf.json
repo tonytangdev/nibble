@@ -54,7 +54,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQyNEU3QjQ4QTg2MDUzRTgKUldUb1UyQ29TSHRPMGt0Q2VHTml2cEVWTlg5WTZRdUl1WU5GaFRONUxpT2xmSVdiSk84WGNySEoK",
       "endpoints": ["https://github.com/tonytangdev/nibble/releases/latest/download/latest.json"]
     }
   }
