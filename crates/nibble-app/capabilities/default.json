@@ -1,7 +1,16 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "What the popover may do: listen for new views.",
+  "description": "What the popover may do: listen for new views, and open the support links in the browser.",
   "windows": ["popover"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        { "url": "https://buymeacoffee.com/tonytangdev" },
+        { "url": "https://tonytang.dev/apps/" }
+      ]
+    }
+  ]
 }

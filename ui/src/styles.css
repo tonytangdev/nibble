@@ -178,7 +178,9 @@ input[type="checkbox"] {
 footer {
   margin-top: auto;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
+  row-gap: 6px;
   padding-top: 10px;
   border-top: 1px solid var(--line);
   font-size: 12px;
@@ -492,4 +494,21 @@ footer {
   .bar > div {
     animation: none !important;
   }
+}
+
+.support {
+  flex-basis: 100%;
+  display: flex;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.support a {
+  color: var(--teal-deep);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.support a:hover {
+  text-decoration: underline;
 }

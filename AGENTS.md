@@ -16,6 +16,14 @@ Claude Code is the first provider. OpenAI and running several subscriptions at o
 
 The work is done when `pnpm check` passes. It runs the formatters, clippy, the tests and cargo-deny. Lint settings live in `[workspace.lints]` in `Cargo.toml` and in the `clippy.toml` files. When a lint fires, fix the code. If a lint is genuinely wrong at one spot, put `#[expect(clippy::<name>, reason = "...")]` on the smallest item that covers it.
 
+## Running the app
+
+`pnpm dev` serves the UI on port 5173. Every worktree uses that same port, and a cold Rust build takes minutes. To run the app, keep the chat responsive:
+
+1. Run `lsof -nP -iTCP:5173 -sTCP:LISTEN`. If another nibble worktree's `vite ui` holds the port, kill it and tell the user which worktree it belonged to.
+2. Start `pnpm dev` with `run_in_background`, then reply to the user straight away: the build is running and nibble will appear in the menu bar.
+3. Read the output when the background job notifies you or the user asks about it.
+
 ## Facts and licensing
 
 - Check plan prices and API rates against the provider's own pricing pages, and record the source URL and the date next to the data.

@@ -44,6 +44,7 @@ pub(crate) fn run() -> tauri::Result<()> {
             None,
         ))
         .plugin(tauri_plugin_positioner::init())
+        .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);

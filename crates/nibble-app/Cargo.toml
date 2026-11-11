@@ -24,6 +24,7 @@ tauri = { version = "2", features = ["tray-icon", "image-png", "macos-private-ap
 tauri-plugin-notification = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-positioner = { version = "2", features = ["tray-icon"] }
+tauri-plugin-opener = "2"
 
 [lints]
 workspace = true

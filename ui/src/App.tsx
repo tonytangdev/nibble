@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEffect, useState } from "react";
 
 import crumbs from "../../design/menubar/crumbs.svg";
@@ -200,6 +201,26 @@ function Footer({ view }: { view: View }) {
         />
         Notify me
       </label>
+      <nav className="support">
+        <SupportLink url="https://buymeacoffee.com/tonytangdev">Buy me a coffee</SupportLink>
+        <span aria-hidden="true">·</span>
+        <SupportLink url="https://tonytang.dev/apps/">More apps at tonytang.dev</SupportLink>
+      </nav>
     </footer>
+  );
+}
+
+/** A link that opens in the default browser, since the popover's webview cannot navigate. */
+function SupportLink({ url, children }: { url: string; children: string }) {
+  return (
+    <a
+      href={url}
+      onClick={(event) => {
+        event.preventDefault();
+        void openUrl(url);
+      }}
+    >
+      {children}
+    </a>
   );
 }
