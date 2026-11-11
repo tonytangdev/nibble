@@ -5,9 +5,9 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Days, Local, NaiveDate, NaiveTime, TimeDelta, TimeZone, Utc};
 use nibble_adapters::{ClaudeCode, JsonCatalog};
-use nibble_core::{CatalogSource, Combined, Inputs, ProviderSource, SourceError, assess};
+use nibble_core::{CatalogSource, Combined, Day, Inputs, ProviderSource, SourceError, assess};
 use tauri::{AppHandle, Emitter, Manager, Runtime, State, WindowEvent};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_notification::NotificationExt;
@@ -32,8 +32,8 @@ struct Shell {
     settings_path: PathBuf,
     view: View,
     subscription: Option<String>,
-    /// The start of the current Week.
-    week: Option<DateTime<Utc>>,
+    /// The start of the current Day.
+    day: Option<DateTime<Utc>>,
     /// When nibble last asked GitHub for a new version, this run.
     last_update_check: Option<DateTime<Utc>>,
     /// The newer version found this run, if any.
@@ -123,7 +123,7 @@ pub(crate) fn run() -> tauri::Result<()> {
         })
         .on_window_event(|window, event| {
             if let WindowEvent::Focused(false) = event {
-                let _hidden = window.hide();
+                tray::hide_on_blur(window);
             }
         })
         .invoke_handler(tauri::generate_handler![
@@ -159,7 +159,7 @@ fn new_shell<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Shell> {
         settings_path,
         view: View::default(),
         subscription: None,
-        week: None,
+        day: None,
         last_update_check: None,
         pending: None,
     })
@@ -216,6 +216,7 @@ fn reassess(shell: &mut Shell) -> Result<(View, Option<Combined>), SourceError> 
     let subscription = shell.settings.apply(detected);
     let inputs = Inputs {
         now,
+        today: local_day(now),
         subscriptions: vec![subscription.clone()],
         usage: snapshot.usage,
         limits: snapshot.limits,
@@ -228,18 +229,38 @@ fn reassess(shell: &mut Shell) -> Result<(View, Option<Combined>), SourceError> 
         return Ok((View::waiting(Status::SignedOut), None));
     };
     shell.subscription = Some(subscription.id.as_str().to_owned());
-    shell.week = Some(assessment.week.start);
+    shell.day = Some(assessment.day.start);
     let mut view = view::of(assessment, &subscription, &inputs.catalog, now);
     view.prompts = Prompts {
-        celebrate: assessment.multiplier.is_some() && shell.settings.celebrated_week != shell.week,
+        celebrate: assessment.multiplier.is_some() && shell.settings.celebrated_day != shell.day,
         ask_autostart: !shell.settings.autostart_asked,
     };
     Ok((view, Some(report.combined)))
 }
 
-/// Sends the Paid off notification once a Week.
+/// Today on this computer's clock, from local midnight to the next.
+fn local_day(now: DateTime<Utc>) -> Day {
+    let today = now.with_timezone(&Local).date_naive();
+    let start = local_midnight(today).unwrap_or(now);
+    let ends_at = today
+        .checked_add_days(Days::new(1))
+        .and_then(local_midnight)
+        .unwrap_or_else(|| start + TimeDelta::days(1));
+    Day { start, ends_at }
+}
+
+/// The first moment of `date` in local time. Where a clock change skips midnight, the
+/// day starts an hour later.
+fn local_midnight(date: NaiveDate) -> Option<DateTime<Utc>> {
+    let at = |time: NaiveTime| Local.from_local_datetime(&date.and_time(time)).earliest();
+    at(NaiveTime::MIN)
+        .or_else(|| at(NaiveTime::from_hms_opt(1, 0, 0)?))
+        .map(|start| start.with_timezone(&Utc))
+}
+
+/// Sends the Paid off notification once a Day.
 fn notify_paid_off<R: Runtime>(app: &AppHandle<R>, shell: &mut Shell, view: &View) {
-    if view.multiplier.is_none() || shell.settings.notified_week == shell.week {
+    if view.multiplier.is_none() || shell.settings.notified_day == shell.day {
         return;
     }
     if !shell.settings.notifications_off {
@@ -248,10 +269,10 @@ fn notify_paid_off<R: Runtime>(app: &AppHandle<R>, shell: &mut Shell, view: &Vie
             .notification()
             .builder()
             .title("nibble ate the whole wedge")
-            .body(format!("Your {plan} has paid for itself this week."))
+            .body(format!("Today alone paid for your whole month of {plan}."))
             .show();
     }
-    shell.settings.notified_week = shell.week;
+    shell.settings.notified_day = shell.day;
     save(shell);
 }
 
@@ -393,7 +414,7 @@ mod commands {
     #[tauri::command]
     pub(super) fn celebrated<R: Runtime>(app: AppHandle<R>, state: State<'_, AppState>) {
         update(&app, &state, |shell| {
-            shell.settings.celebrated_week = shell.week;
+            shell.settings.celebrated_day = shell.day;
         });
     }
 
@@ -448,5 +469,21 @@ mod commands {
     #[tauri::command]
     pub(super) fn quit<R: Runtime>(app: AppHandle<R>) {
         app.exit(0);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::{TimeDelta, Utc};
+
+    use super::local_day;
+
+    #[test]
+    fn today_holds_now_and_spans_one_local_day() {
+        let now = Utc::now();
+        let day = local_day(now);
+        assert!(day.start <= now && now < day.ends_at);
+        let length = day.ends_at - day.start;
+        assert!(TimeDelta::hours(23) <= length && length <= TimeDelta::hours(25));
     }
 }

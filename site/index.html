@@ -29,7 +29,7 @@
     <meta property="og:image:height" content="640" />
     <meta
       property="og:image:alt"
-      content="nibble: is your Claude Code subscription paying for itself? Beside the question, nibble’s popover under its cheese wedge in the menu bar, with nibble the mouse nibbling a wedge of cheese: Claude Code this week, at API rates, $9.30 of $23.08, 40% paid off."
+      content="nibble: is your Claude Code subscription paying for itself? Beside the question, nibble’s popover under its cheese wedge in the menu bar, with nibble the mouse nibbling a wedge of cheese: Claude Code today, at API rates, $40.00 of $100, 40% paid off."
     />
     <meta name="twitter:card" content="summary_large_image" />
     <!-- WebSite names the site in search results; without it on this subdomain, Google may
@@ -156,14 +156,14 @@
           </p>
         </div>
 
-        <!-- Example figures. The share is the Max plan's list price spread over the weeks of
-             a year: $100 × 12 ÷ 52 = $23.08. Plan price from https://claude.com/pricing,
-             retrieved 2026-11-11 (crates/nibble-adapters/data/catalog.json). -->
+        <!-- Example figures. Today's usage against the Max plan's whole monthly list price,
+             $100. Plan price from https://claude.com/pricing, retrieved 2026-11-11
+             (crates/nibble-adapters/data/catalog.json). -->
         <figure class="scene">
           <div
             class="desk"
             role="img"
-            aria-label="An example of nibble's popover, open under its cheese wedge icon in the menu bar. nibble the mouse is nibbling a wedge of cheese. Nibbling through Max. Claude Code this week, at API rates: $9.30 of $23.08, 40% paid off."
+            aria-label="An example of nibble's popover, open under its cheese wedge icon in the menu bar. nibble the mouse is nibbling a wedge of cheese. Nibbling through Max. Claude Code today, at API rates: $40.00 of $100, 40% paid off."
           >
             <div class="menubar">
               <span class="menus"
@@ -191,15 +191,15 @@
               </div>
               <div class="body">
                 <p class="headline">Nibbling through Max</p>
-                <p class="label">Claude Code this week, at API rates</p>
+                <p class="label">Claude Code today, at API rates</p>
                 <p class="figure">
-                  <span class="value">$9.30</span>
-                  <span class="share">of $23.08</span>
+                  <span class="value">$40.00</span>
+                  <span class="share">of $100</span>
                 </p>
                 <div class="cheese"><div class="eaten"></div></div>
                 <p class="meta">
                   <span>40% paid off</span>
-                  <span>Resets Nov 16 · 3 days left</span>
+                  <span>Resets in 14 hours</span>
                 </p>
               </div>
               <div class="foot">
@@ -209,7 +209,7 @@
             </div>
           </div>
           <figcaption>
-            An example reading. Max lists at $100 a month, which comes to $23.08 a week.
+            An example reading. Max lists at $100 a month, and today is 40% of the way there.
           </figcaption>
         </figure>
       </section>
@@ -237,9 +237,9 @@
           <li>
             <h3>It compares that with your plan</h3>
             <p>
-              Your plan’s monthly price is spread evenly over the weeks of a year. When this week’s
-              API value passes that weekly share, the plan has paid for itself, and nibble tells you
-              by how much.
+              Each day, nibble asks whether today alone has paid for your whole month. When today’s
+              API value passes your plan’s monthly price, nibble tells you by how much. At midnight
+              it starts over.
             </p>
           </li>
         </ol>
@@ -265,7 +265,8 @@
             </div>
             <h3>Nibbling</h3>
             <p>
-              The everyday mood. Your usage is adding up and the week is on its way to paying off.
+              The everyday mood. Your usage is adding up and today is on its way to paying for the
+              month.
             </p>
           </li>
           <li class="paid">
@@ -280,8 +281,8 @@
             </div>
             <h3>Paid off</h3>
             <p>
-              This week’s usage is worth more than the week costs. nibble celebrates and shows a
-              multiplier, like 1.4×.
+              Today’s usage is worth more than your plan costs for the whole month. nibble
+              celebrates and shows a multiplier, like 1.4×.
             </p>
           </li>
           <li class="sleepy">
@@ -317,8 +318,8 @@
           <div>
             <h3>In the menu bar</h3>
             <p>
-              The wedge of cheese gets smaller as the week pays off. Once it has, you get an empty
-              wedge with a check and the multiplier next to it.
+              The wedge of cheese gets smaller as today pays for the month. Once it has, you get an
+              empty wedge with a check and the multiplier next to it.
             </p>
           </div>
           <ul aria-label="Menu bar icons">

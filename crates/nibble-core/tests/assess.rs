@@ -6,7 +6,7 @@
 
 use chrono::{DateTime, TimeZone, Utc};
 use nibble_core::{
-    Assessment, CheaperOption, Dismissal, Inputs, LimitReading, ModelRates, Mood, PlanId,
+    Assessment, CheaperOption, Day, Dismissal, Inputs, LimitReading, ModelRates, Mood, PlanId,
     PlanOffer, PriceCatalog, Progress, ProviderId, Rates, SeatKind, Subscription, SubscriptionId,
     Suggestion, TokenCounts, UsageRecord, Usd, Wedge, Week, assess,
 };
@@ -42,8 +42,6 @@ fn catalog() -> PriceCatalog {
             model_prefix: "claude-opus".into(),
             per_million: opus_rates(),
         }],
-        // Priced in multiples of $13 so the weekly shares (12/52 of the price) are whole:
-        // $6, $30 and $60 a week.
         plans: vec![
             PlanOffer::new(claude(), "pro", Usd::from_cents(2_600), 1),
             PlanOffer::new(claude(), "max_5x", Usd::from_cents(13_000), 5),
@@ -79,9 +77,19 @@ fn input_only(input: u64) -> TokenCounts {
     }
 }
 
+/// The UTC calendar day containing `now`: the user's local day when they live on UTC.
+fn utc_day(now: DateTime<Utc>) -> Day {
+    let start = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc();
+    Day {
+        start,
+        ends_at: start + chrono::TimeDelta::days(1),
+    }
+}
+
 fn inputs(now: DateTime<Utc>, sub: Subscription, records: Vec<UsageRecord>) -> Inputs {
     Inputs {
         now,
+        today: utc_day(now),
         subscriptions: vec![sub],
         usage: records,
         limits: vec![],
@@ -96,7 +104,7 @@ fn only(inputs: &Inputs) -> Assessment {
 }
 
 #[test]
-fn values_this_weeks_usage_at_api_rates_per_token_kind() {
+fn values_todays_usage_at_api_rates_per_token_kind() {
     let tokens = TokenCounts {
         input: 1_000_000,
         output: 100_000,
@@ -107,7 +115,7 @@ fn values_this_weeks_usage_at_api_rates_per_token_kind() {
     let a = only(&inputs(
         day(2026, 11, 11),
         subscription("max_5x"),
-        vec![usage("claude-opus-5-5", day(2026, 11, 10), tokens)],
+        vec![usage("claude-opus-5-5", hour(2026, 11, 11, 9), tokens)],
     ));
 
     // $5 input + $2.50 output + $1 cache read + $4 one-hour writes.
@@ -154,7 +162,6 @@ fn the_week_ends_at_the_weekly_reset_the_provider_reported() {
             resets_at: hour(2026, 11, 18, 10),
         }
     );
-    assert_eq!(a.value, Usd::from_cents(500));
 }
 
 #[test]
@@ -213,21 +220,52 @@ fn without_a_reported_reset_weeks_run_monday_to_monday_utc() {
             resets_at: hour(2026, 11, 16, 0),
         }
     );
+}
+
+#[test]
+fn break_even_compares_today_with_the_whole_monthly_plan_price() {
+    let a = only(&inputs(
+        day(2026, 11, 11),
+        subscription("max_5x"),
+        usage_today(6_500),
+    ));
+
+    assert_eq!(a.price, Some(Usd::from_cents(13_000)));
+    assert_eq!(a.progress, Some(Progress::from_basis_points(5_000)));
+}
+
+#[test]
+fn today_runs_from_the_users_local_midnight_to_the_next() {
+    // In Paris (UTC+1) Nov 11 runs from 23:00 UTC on Nov 10 to 23:00 UTC on Nov 11.
+    let mut i = inputs(
+        hour(2026, 11, 11, 22),
+        subscription("max_5x"),
+        vec![
+            usage("claude-opus-5-5", hour(2026, 11, 10, 22), worth(9_000)),
+            usage("claude-opus-5-5", hour(2026, 11, 10, 23), worth(400)),
+            usage("claude-opus-5-5", hour(2026, 11, 11, 21), worth(100)),
+        ],
+    );
+    i.today = Day {
+        start: hour(2026, 11, 10, 23),
+        ends_at: hour(2026, 11, 11, 23),
+    };
+    let a = only(&i);
+
+    assert_eq!(a.day, i.today);
     assert_eq!(a.value, Usd::from_cents(500));
 }
 
 #[test]
-fn break_even_compares_the_week_with_a_weekly_share_of_the_plan_price() {
-    // Max 5x at $130 a month is $1,560 a year, or $30 a week.
+fn yesterdays_usage_does_not_count_toward_today() {
     let a = only(&inputs(
         day(2026, 11, 11),
         subscription("max_5x"),
-        usage_worth(1_500),
+        usage_worth(20_000),
     ));
 
-    assert_eq!(a.price, Some(Usd::from_cents(13_000)));
-    assert_eq!(a.weekly_share, Some(Usd::from_cents(3_000)));
-    assert_eq!(a.progress, Some(Progress::from_basis_points(5_000)));
+    assert_eq!(a.value, Usd::ZERO);
+    assert_eq!(a.mood, Mood::Nibbling);
 }
 
 /// Opus input tokens worth exactly `cents` at $5 per million.
@@ -235,31 +273,40 @@ fn worth(cents: u64) -> TokenCounts {
     input_only(cents * 2_000)
 }
 
-/// Usage worth `cents`, inside both this Week and the Rolling 30 days.
+/// Usage worth `cents` yesterday: inside the Rolling 30 days, but not today.
 fn usage_worth(cents: u64) -> Vec<UsageRecord> {
     vec![usage("claude-opus-5-5", day(2026, 11, 10), worth(cents))]
 }
 
+/// Usage worth `cents` this morning, toward today's break-even.
+fn usage_today(cents: u64) -> Vec<UsageRecord> {
+    vec![usage(
+        "claude-opus-5-5",
+        hour(2026, 11, 11, 9),
+        worth(cents),
+    )]
+}
+
 #[test]
 fn the_wedge_shrinks_in_four_steps_then_turns_paid_off() {
-    // Max 5x's weekly share is $30.
+    // Max 5x costs $130 a month.
     let cases = [
         (0, Wedge::Full),
-        (749, Wedge::Full),
-        (750, Wedge::TwoThirds),
-        (1_499, Wedge::TwoThirds),
-        (1_500, Wedge::OneThird),
-        (2_249, Wedge::OneThird),
-        (2_250, Wedge::Crumbs),
-        (2_999, Wedge::Crumbs),
-        (3_000, Wedge::PaidOff),
-        (7_500, Wedge::PaidOff),
+        (3_249, Wedge::Full),
+        (3_250, Wedge::TwoThirds),
+        (6_499, Wedge::TwoThirds),
+        (6_500, Wedge::OneThird),
+        (9_749, Wedge::OneThird),
+        (9_750, Wedge::Crumbs),
+        (12_999, Wedge::Crumbs),
+        (13_000, Wedge::PaidOff),
+        (32_500, Wedge::PaidOff),
     ];
     for (cents, wedge) in cases {
         let a = only(&inputs(
             day(2026, 11, 11),
             subscription("max_5x"),
-            usage_worth(cents),
+            usage_today(cents),
         ));
         assert_eq!(a.wedge, Some(wedge), "at ${cents} cents of value");
     }
@@ -270,12 +317,12 @@ fn the_multiplier_appears_once_paid_off() {
     let before = only(&inputs(
         day(2026, 11, 11),
         subscription("max_5x"),
-        usage_worth(2_999),
+        usage_today(12_999),
     ));
     let after = only(&inputs(
         day(2026, 11, 11),
         subscription("max_5x"),
-        usage_worth(3_600),
+        usage_today(15_600),
     ));
 
     assert_eq!(before.multiplier, None);
@@ -286,10 +333,9 @@ fn the_multiplier_appears_once_paid_off() {
 fn a_price_override_replaces_the_list_price() {
     let mut sub = subscription("max_5x");
     sub.price_override = Some(Usd::from_cents(6_500));
-    let a = only(&inputs(day(2026, 11, 11), sub, usage_worth(1_500)));
+    let a = only(&inputs(day(2026, 11, 11), sub, usage_today(6_500)));
 
     assert_eq!(a.price, Some(Usd::from_cents(6_500)));
-    assert_eq!(a.weekly_share, Some(Usd::from_cents(1_500)));
     assert_eq!(a.wedge, Some(Wedge::PaidOff));
 }
 
@@ -298,22 +344,27 @@ fn a_plan_missing_from_the_catalog_has_value_but_no_progress() {
     let a = only(&inputs(
         day(2026, 11, 11),
         subscription("max_50x"),
-        usage_worth(5_000),
+        usage_today(5_000),
     ));
 
     assert_eq!(a.value, Usd::from_cents(5_000));
     assert_eq!(a.price, None);
-    assert_eq!(a.weekly_share, None);
     assert_eq!(a.progress, None);
     assert_eq!(a.wedge, None);
 }
 
 #[test]
 fn responses_from_unknown_models_are_counted_but_never_valued() {
-    let mut mystery = usage("claude-mystery-1", day(2026, 11, 10), input_only(1_000_000));
+    let mut mystery = usage(
+        "claude-mystery-1",
+        hour(2026, 11, 11, 9),
+        input_only(1_000_000),
+    );
     mystery.responses = 12;
-    let mut records = usage_worth(4_000);
-    records.push(mystery);
+    let mut yesterday = usage("claude-mystery-1", day(2026, 11, 10), input_only(1));
+    yesterday.responses = 5;
+    let mut records = usage_today(4_000);
+    records.extend([mystery, yesterday]);
     let a = only(&inputs(day(2026, 11, 11), subscription("max_5x"), records));
 
     assert_eq!(a.value, Usd::from_cents(4_000));
@@ -328,10 +379,14 @@ fn the_longest_matching_model_prefix_sets_the_rate() {
         vec![
             usage(
                 "claude-opus-4-20250514",
-                day(2026, 11, 10),
+                hour(2026, 11, 11, 9),
                 input_only(1_000_000),
             ),
-            usage("claude-opus-5-5", day(2026, 11, 10), input_only(1_000_000)),
+            usage(
+                "claude-opus-5-5",
+                hour(2026, 11, 11, 9),
+                input_only(1_000_000),
+            ),
         ],
     );
     let mut opus_4 = opus_rates();
@@ -351,12 +406,12 @@ fn nibbling_until_paid_off() {
     let under = only(&inputs(
         day(2026, 11, 11),
         subscription("max_5x"),
-        usage_worth(2_999),
+        usage_today(12_999),
     ));
     let over = only(&inputs(
         day(2026, 11, 11),
         subscription("max_5x"),
-        usage_worth(3_000),
+        usage_today(13_000),
     ));
 
     assert_eq!(under.mood, Mood::Nibbling);
@@ -432,7 +487,13 @@ fn reaching_the_seven_day_window_once_is_still_hungry() {
 
 #[test]
 fn still_hungry_beats_paid_off() {
-    let a = with_limits("max_5x", 9_000, vec![reading(day(2026, 11, 10), 50, 95)]);
+    let mut i = inputs(
+        day(2026, 11, 11),
+        subscription("max_5x"),
+        usage_today(39_000),
+    );
+    i.limits = vec![reading(day(2026, 11, 10), 50, 95)];
+    let a = only(&i);
 
     assert_eq!(a.mood, Mood::StillHungry);
     assert_eq!(a.multiplier, Some(Progress::from_basis_points(30_000)));
@@ -530,8 +591,9 @@ fn a_dismissal_hides_the_suggestion_until_the_next_week() {
 fn organization_seats_get_api_value_without_plan_advice() {
     let mut light = sleepy_inputs("pro", 100, vec![]);
     light.subscriptions[0].seat = SeatKind::Organization;
-    let mut limited = sleepy_inputs("pro", 100, vec![reading(day(2026, 11, 10), 50, 95)]);
-    limited.subscriptions[0].seat = SeatKind::Organization;
+    light.usage.extend(usage_today(100));
+    let mut limited = light.clone();
+    limited.limits = vec![reading(day(2026, 11, 10), 50, 95)];
 
     for a in [only(&light), only(&limited)] {
         assert_eq!(a.mood, Mood::Nibbling);
@@ -604,7 +666,7 @@ fn the_menu_bar_combines_every_priced_subscription() {
     let mut i = inputs(
         day(2026, 11, 11),
         subscription("max_5x"),
-        usage_worth(1_800),
+        usage_today(7_800),
     );
     i.catalog.plans.push(PlanOffer::new(
         openai.clone(),
@@ -624,9 +686,9 @@ fn the_menu_bar_combines_every_priced_subscription() {
 
     let combined = assess(&i).combined;
 
-    // $18 of Claude value against weekly shares of $30 + $6; the unknown plan is left out.
-    assert_eq!(combined.value, Usd::from_cents(1_800));
-    assert_eq!(combined.weekly_share, Usd::from_cents(3_600));
+    // $78 of Claude value today against $130 + $26 of plans; the unknown plan is left out.
+    assert_eq!(combined.value, Usd::from_cents(7_800));
+    assert_eq!(combined.price, Usd::from_cents(15_600));
     assert_eq!(combined.wedge, Some(Wedge::OneThird));
     assert_eq!(combined.multiplier, None);
 }

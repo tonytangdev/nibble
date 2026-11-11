@@ -3,13 +3,12 @@ export interface View {
   status: "loading" | "signedOut" | "noUsage" | "ready";
   plan: string | null;
   valueCents: number;
-  weeklyShareCents: number | null;
+  priceCents: number | null;
   progressPercent: number | null;
   multiplier: string | null;
   lowerBound: boolean;
   mood: Mood;
   suggestion: Suggestion | null;
-  resetsOn: string | null;
   hoursLeft: number | null;
   unpricedResponses: number;
   prompts: { celebrate: boolean; askAutostart: boolean };
@@ -33,13 +32,12 @@ export const loading: View = {
   status: "loading",
   plan: null,
   valueCents: 0,
-  weeklyShareCents: null,
+  priceCents: null,
   progressPercent: null,
   multiplier: null,
   lowerBound: false,
   mood: "nibbling",
   suggestion: null,
-  resetsOn: null,
   hoursLeft: null,
   unpricedResponses: 0,
   prompts: { celebrate: false, askAutostart: false },

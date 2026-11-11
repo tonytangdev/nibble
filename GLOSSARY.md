@@ -28,10 +28,6 @@ _Avoid_: cost, fee
 The span between two renewals of a Subscription, a month. nibble does not track when it renews.
 _Avoid_: month, period
 
-**Weekly share**:
-The Plan price spread evenly over the weeks of a year: Plan price × 12 ÷ 52.
-_Avoid_: weekly price, weekly cost
-
 **Cheaper option**:
 The next step down from the current Plan: the next smaller Plan, or paying the API directly when already on the smallest.
 
@@ -73,13 +69,19 @@ How much of a Limit window's cap is used, as a percentage.
 One observed Utilization for each Limit window, with when it was observed and, when known, when the 7-day window resets.
 
 **Week**:
-The current 7-day Limit window, from one weekly reset to the next; Monday to Monday UTC until a Limit reading reports the reset.
+The current 7-day Limit window, from one weekly reset to the next; Monday to Monday UTC until a Limit reading reports the reset. Dismissals follow it.
 _Avoid_: cycle, period, calendar week
+
+## Time
+
+**Day**:
+Today in the user's local time, from midnight to the next midnight. Break-even progress follows it.
+_Avoid_: date, 24 hours
 
 ## Verdict
 
 **Break-even progress**:
-The current Week's API value divided by the Weekly share.
+Today's API value divided by the whole Plan price: how far today alone goes toward paying for the month.
 
 **Paid off**:
 Break-even progress at or above 100%.

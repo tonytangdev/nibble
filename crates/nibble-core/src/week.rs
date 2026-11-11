@@ -1,8 +1,8 @@
-//! The Week: the Provider's 7-day Limit window, which Break-even progress follows (ADR-0007).
+//! The Week: the Provider's 7-day Limit window, which Dismissals follow (ADR-0007).
 
 use chrono::{DateTime, Datelike, Days, NaiveTime, TimeDelta, Utc};
 
-use crate::{LimitReading, ProviderId, Usd};
+use crate::{LimitReading, ProviderId};
 
 /// The length of a Week.
 const WEEK: TimeDelta = TimeDelta::weeks(1);
@@ -50,12 +50,6 @@ impl Week {
     pub(crate) fn contains(&self, at: DateTime<Utc>) -> bool {
         self.start <= at && at < self.resets_at
     }
-}
-
-/// A Plan price's Weekly share: a year of it spread evenly over 52 weeks.
-#[must_use]
-pub(crate) fn weekly_share(price: Usd) -> Usd {
-    price.scaled(12, 52)
 }
 
 /// Midnight UTC on the Monday on or before `now`.

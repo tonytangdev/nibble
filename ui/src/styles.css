@@ -295,7 +295,7 @@ h1 {
   content: none;
 }
 
-/* Where break-even fell, once the Week is worth more than its share. */
+/* Where break-even fell, once today is worth more than the monthly plan. */
 .cheese .tick {
   position: absolute;
   top: 0;
@@ -494,7 +494,7 @@ footer a:hover,
   background: var(--teal);
 }
 
-.celebrate > :not(.crumbs) {
+.celebrate > :not(.crumbs, .burst) {
   position: relative;
   z-index: 1;
 }
@@ -554,6 +554,190 @@ footer a:hover,
   }
   to {
     transform: translateY(500px) rotate(300deg);
+  }
+}
+
+/* The send-off, from "Well earned!": the button gives, cheese bursts out of it, nibble
+   leaps, and the teal card closes in on the button to show the paid-off reading below.
+   --x and --y are the button's centre. */
+.celebrate button {
+  min-width: 132px;
+}
+
+.celebrate button svg {
+  display: block;
+  margin: 2px auto;
+}
+
+.party button {
+  animation: press 460ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tick-draw {
+  stroke-dasharray: 18;
+  animation: draw 320ms 120ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+.party::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at var(--x) var(--y),
+    oklch(0.86 0.16 92 / 0.55),
+    oklch(0.86 0.16 92 / 0) 55%
+  );
+  animation: flash 700ms ease-out both;
+}
+
+.party .mascot {
+  animation: leap 900ms cubic-bezier(0.3, 0, 0.3, 1) both;
+}
+
+.party h1 {
+  animation: cheer 520ms 80ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.burst {
+  position: fixed;
+  left: var(--x);
+  top: var(--y);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.burst i {
+  position: absolute;
+  width: var(--size);
+  height: var(--size);
+  margin: calc(var(--size) / -2);
+  border-radius: 1.5px;
+  background: var(--cheese);
+  animation: fling 1150ms var(--delay) cubic-bezier(0.1, 0.75, 0.3, 1) both;
+}
+
+.burst i.wedge {
+  width: calc(var(--size) * 1.7);
+  border-radius: 0;
+  clip-path: polygon(0 100%, 100% 100%, 15% 0);
+}
+
+.burst i.spark {
+  width: calc(var(--size) * 1.8);
+  height: calc(var(--size) * 1.8);
+  border-radius: 0;
+  background: var(--cream);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+}
+
+.burst .ring {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  margin: -20px;
+  border: 3px solid var(--cream);
+  border-radius: 50%;
+  animation: ring 650ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.burst .ring.late {
+  border-color: var(--cheese);
+  animation-delay: 110ms;
+}
+
+.celebrate.leaving {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  animation: swallow 650ms cubic-bezier(0.5, 0, 0.6, 1) both;
+}
+
+@keyframes press {
+  25% {
+    transform: scale(0.86);
+  }
+  60% {
+    transform: scale(1.14);
+  }
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 18;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes flash {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes leap {
+  0%,
+  100% {
+    transform: none;
+  }
+  15% {
+    transform: translateY(6px) scale(1.08, 0.9);
+  }
+  45% {
+    transform: translateY(-34px) scale(0.95, 1.06) rotate(-5deg);
+  }
+  70% {
+    transform: translateY(0) scale(1.07, 0.93);
+  }
+  85% {
+    transform: scale(0.98, 1.02);
+  }
+}
+
+@keyframes cheer {
+  45% {
+    transform: scale(1.1) rotate(-2deg);
+  }
+}
+
+@keyframes fling {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0.2) rotate(0deg);
+  }
+  40% {
+    opacity: 1;
+    transform: translate(var(--dx), var(--dy)) scale(1) rotate(calc(var(--spin) * 0.6));
+    animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), calc(var(--dy) + 150px)) scale(0.7) rotate(var(--spin));
+  }
+}
+
+@keyframes ring {
+  from {
+    opacity: 1;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 0;
+    transform: scale(6);
+  }
+}
+
+@keyframes swallow {
+  from {
+    clip-path: circle(105% at var(--x) var(--y));
+  }
+  to {
+    clip-path: circle(0 at var(--x) var(--y));
   }
 }
 
@@ -828,11 +1012,17 @@ footer a:hover,
   .mascot,
   .mascot *,
   .cheese .eaten,
-  .crumbs i {
+  .crumbs i,
+  .party button,
+  .party h1,
+  .tick-draw,
+  .celebrate.leaving {
     animation: none !important;
   }
 
-  .crumbs {
+  .crumbs,
+  .burst,
+  .party::before {
     display: none;
   }
 }

@@ -1,11 +1,18 @@
-import { type CSSProperties, type ReactNode, useEffect, useState } from "react";
+import {
+  type CSSProperties,
+  type MouseEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import nibbling from "../../design/nibble-nibbling.svg?raw";
 import paidOff from "../../design/nibble-paid-off.svg?raw";
 import sleepy from "../../design/nibble-sleepy.svg?raw";
 import stillHungry from "../../design/nibble-still-hungry.svg?raw";
-import { dollars, headline, progressText, suggestionText, waiting, weeklyReset } from "./copy";
-import { useCountUp, useOpenCount } from "./motion";
+import { dailyReset, dollars, headline, progressText, suggestionText, waiting } from "./copy";
+import { reducedMotion, useCountUp, useOpenCount } from "./motion";
 import { getView, onView, openExternal, send } from "./shell";
 import { loading, type Mood, type Update, type View } from "./view";
 
@@ -22,10 +29,18 @@ function useView(): View {
   return view;
 }
 
+/** Where the Paid off card is: up, playing its send-off, or gone until the next Day. */
+type Party = "up" | "leaving" | "gone";
+
 export function App() {
   const view = useView();
   const opens = useOpenCount();
   const [settings, setSettings] = useState(false);
+  const [party, setParty] = useState<Party>("up");
+  // Bumped as the Paid off card leaves, so the reading below replays its entrance.
+  const [encore, setEncore] = useState(0);
+  const replay = opens + encore;
+  if (!view.prompts.celebrate && party !== "up") setParty("up");
   // Every open starts on the reading, not wherever the last visit ended.
   const [seenOpens, setSeenOpens] = useState(opens);
   if (seenOpens !== opens) {
@@ -52,8 +67,8 @@ export function App() {
       />
     );
   }
-  if (view.prompts.celebrate) return <Celebration view={view} opens={opens} />;
-  return (
+  const celebrating = view.prompts.celebrate && party !== "gone";
+  const reading = (
     <main className={`card mood-${view.mood}`}>
       <header className="stage">
         {view.plan && <span className="chip">{view.plan}</span>}
@@ -67,15 +82,35 @@ export function App() {
         >
           <GearIcon />
         </button>
-        <Mascot mood={view.mood} opens={opens} label={`nibble, ${view.mood}`} />
+        <Mascot mood={view.mood} opens={replay} label={`nibble, ${view.mood}`} />
       </header>
       <section className="body">
-        {view.status === "ready" ? <Reading view={view} opens={opens} /> : <Waiting view={view} />}
+        {view.status === "ready" ? <Reading view={view} opens={replay} /> : <Waiting view={view} />}
         {view.update && <UpdatePrompt update={view.update} />}
         {view.prompts.askAutostart && <AutostartPrompt />}
       </section>
       <Footer />
     </main>
+  );
+  // One shape for every state, so neither part remounts as the Paid off card leaves.
+  return (
+    <>
+      {celebrating && party === "up" ? null : reading}
+      {celebrating ? (
+        <Celebration
+          view={view}
+          opens={opens}
+          onLeave={() => {
+            setEncore((count) => count + 1);
+            setParty("leaving");
+          }}
+          onGone={() => {
+            setParty("gone");
+            send({ name: "celebrated" });
+          }}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -106,21 +141,19 @@ function Waiting({ view }: { view: View }) {
   );
 }
 
-/** This Week's reading: what the usage is worth, and how far that goes toward the plan. */
+/** Today's reading: what the usage is worth, and how far that goes toward the month's plan. */
 function Reading({ view, opens }: { view: View; opens: number }) {
   const value = useCountUp(view.valueCents, opens);
   const progress = progressText(view);
-  const reset = weeklyReset(view);
+  const reset = dailyReset(view);
   return (
     <>
       <h1>{headline(view)}</h1>
       <div className="reading">
-        <p className="label">Claude Code this week, at API rates</p>
+        <p className="label">Claude Code today, at API rates</p>
         <p className="figure">
           <span className="value">{dollars(value)}</span>
-          {view.weeklyShareCents !== null && (
-            <span className="share">of {dollars(view.weeklyShareCents)}</span>
-          )}
+          {view.priceCents !== null && <span className="share">of {dollars(view.priceCents)}</span>}
           {view.multiplier && (
             <span className="multiplier">
               {view.lowerBound ? "≥" : ""}
@@ -187,9 +220,76 @@ function Cheese({ percent, replay }: { percent: number; replay: number }) {
   );
 }
 
-function Celebration({ view, opens }: { view: View; opens: number }) {
+/** When the send-off starts closing the card, and when it is over, in milliseconds. */
+const LEAVE_AT = 950;
+const GONE_AT = 1600;
+
+/** The pieces flung from the button: crumbs, little wedges and sparks, all around it. */
+const PIECES = Array.from({ length: 32 }, (_, index) => {
+  const angle = (index / 32) * Math.PI * 2 + (index % 3) * 0.19;
+  const reach = 70 + ((index * 53) % 95);
+  return {
+    kind: index % 5 === 0 ? "spark" : index % 3 === 0 ? "wedge" : "crumb",
+    style: {
+      "--dx": `${(Math.cos(angle) * reach).toFixed(1)}px`,
+      "--dy": `${(Math.sin(angle) * reach - 36).toFixed(1)}px`,
+      "--spin": `${String(((index * 97) % 540) - 270)}deg`,
+      "--size": `${String(5 + ((index * 7) % 6))}px`,
+      "--delay": `${String((index % 4) * 25)}ms`,
+    } as CSSProperties,
+  };
+});
+
+function Celebration({
+  view,
+  opens,
+  onLeave,
+  onGone,
+}: {
+  view: View;
+  opens: number;
+  onLeave: () => void;
+  onGone: () => void;
+}) {
+  const [origin, setOrigin] = useState<{ x: number; y: number } | null>(null);
+  const [leaving, setLeaving] = useState(false);
+  const timers = useRef<number[]>([]);
+  useEffect(() => {
+    const pending = timers.current;
+    return () => {
+      pending.forEach((timer) => {
+        window.clearTimeout(timer);
+      });
+    };
+  }, []);
+
+  const celebrate = (event: MouseEvent<HTMLButtonElement>) => {
+    if (origin) return;
+    const box = event.currentTarget.getBoundingClientRect();
+    setOrigin({ x: box.left + box.width / 2, y: box.top + box.height / 2 });
+    const calm = reducedMotion();
+    timers.current.push(
+      window.setTimeout(
+        () => {
+          setLeaving(true);
+          onLeave();
+        },
+        calm ? 0 : LEAVE_AT,
+      ),
+      window.setTimeout(onGone, calm ? 200 : GONE_AT),
+    );
+  };
+
+  const classes = ["card", "celebrate", origin && "party", leaving && "leaving"];
   return (
-    <main className="card celebrate">
+    <main
+      className={classes.filter(Boolean).join(" ")}
+      style={
+        origin
+          ? ({ "--x": `${String(origin.x)}px`, "--y": `${String(origin.y)}px` } as CSSProperties)
+          : undefined
+      }
+    >
       <div className="crumbs" key={opens} aria-hidden="true">
         {Array.from({ length: 14 }, (_, index) => (
           <i
@@ -202,20 +302,23 @@ function Celebration({ view, opens }: { view: View; opens: number }) {
           />
         ))}
       </div>
+      {origin && (
+        <div className="burst" aria-hidden="true">
+          <b className="ring" />
+          <b className="ring late" />
+          {PIECES.map((piece, index) => (
+            <i key={index} className={piece.kind} style={piece.style} />
+          ))}
+        </div>
+      )}
       <Mascot mood="paidOff" opens={opens} label="nibble, celebrating" />
       <h1>nibble ate the whole wedge!</h1>
       <p className="lede">
-        {view.plan ?? "Your plan"} has paid for itself this week
+        Today alone paid for your whole month of {view.plan ?? "your plan"}
         {view.multiplier ? `, ${view.multiplier} and counting` : ""}.
       </p>
-      <button
-        type="button"
-        className="primary"
-        onClick={() => {
-          send({ name: "celebrated" });
-        }}
-      >
-        Yum
+      <button type="button" className="primary" aria-label="Well earned!" onClick={celebrate}>
+        {origin ? <CheckIcon /> : "Well earned!"}
       </button>
     </main>
   );
@@ -301,7 +404,7 @@ function Settings({ view, onClose }: { view: View; onClose: () => void }) {
       <section className="rows">
         <Switch
           label="Notify me when it pays off"
-          hint="Once a week, when your plan breaks even."
+          hint="Once a day, when today covers the month."
           on={notify}
           onChange={(on) => {
             setNotify(on);
@@ -404,6 +507,22 @@ function GearIcon() {
         strokeDasharray="2.6 2.427"
       />
       <circle cx="10" cy="10" r="4.4" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+      <path
+        className="tick-draw"
+        d="M4.5 10.5 8.5 14.5 15.5 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

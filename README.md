@@ -14,19 +14,19 @@ A menu bar app that prices your Claude Code usage at API rates and compares it t
 
 </div>
 
-nibble, a cheese-loving mouse, eats through a wedge as your usage adds up. It celebrates when your plan has paid for itself this week, and suggests a cheaper or bigger plan when that would suit you better.
+nibble, a cheese-loving mouse, eats through a wedge as your usage adds up. It celebrates on days when your usage alone has paid for your whole month, and suggests a cheaper or bigger plan when that would suit you better.
 
 ## Screenshots
 
 <table>
   <tr>
-    <td width="33%"><img src="docs/screenshots/nibbling.png" alt="The popover partway through the week: $15.70 of Claude Code usage against a $23.08 weekly share, 68% paid off"></td>
-    <td width="33%"><img src="docs/screenshots/paid-off-dark.png" alt="The popover in dark mode after break-even: $33.12 against $23.08, a 1.4× multiplier and a cheering nibble"></td>
+    <td width="33%"><img src="docs/screenshots/nibbling.png" alt="The popover partway through the day: $68 of Claude Code usage against a $100 monthly plan, 68% paid off"></td>
+    <td width="33%"><img src="docs/screenshots/paid-off-dark.png" alt="The popover in dark mode after break-even: $143 of Claude Code usage today against a $100 monthly plan, a 1.4× multiplier and a cheering nibble"></td>
     <td width="33%"><img src="docs/screenshots/celebration.png" alt="The break-even celebration on a teal card: nibble ate the whole wedge"></td>
   </tr>
   <tr>
-    <td><b>Nibbling.</b> This week's Claude Code usage at API rates, against your plan's weekly share.</td>
-    <td><b>Paid off</b> (dark mode). The plan has covered itself, and the multiplier shows by how much.</td>
+    <td><b>Nibbling.</b> Today's Claude Code usage at API rates, against your plan's monthly price.</td>
+    <td><b>Paid off</b> (dark mode). Today alone has covered the month, and the multiplier shows by how much.</td>
     <td><b>Break-even.</b> nibble celebrates once the wedge is gone.</td>
   </tr>
   <tr>
@@ -43,11 +43,11 @@ nibble, a cheese-loving mouse, eats through a wedge as your usage adds up. It ce
 
 ## Features
 
-- **Weekly break-even.** Prices this week's Claude Code usage at API rates and compares it to your plan's weekly share. The week follows Claude's own 7-day limit window, so it refills when your limits do.
+- **Daily break-even.** Prices today's Claude Code usage at API rates and compares it to your plan's whole monthly price: has today alone paid for the month? It starts over at local midnight.
 - **A cheese wedge in the menu bar.** The icon empties in steps as you use your plan. Once it's paid off, it shows the multiplier, e.g. `1.4×`.
 - **Plan detection.** Reads which plan you're on (Pro, Max or Ultra) from your Claude Code sign-in. No setup.
 - **Right-sizing suggestions.** If a smaller plan, or paying the API directly, would have covered your last 30 days, nibble says so. If you keep running into your limits, it suggests a bigger plan. "Not now" quiets a suggestion until next week.
-- **A break-even notification**, once a week, when your plan pays for itself (can be turned off).
+- **A break-even notification**, once a day, when today's usage covers your monthly plan (can be turned off).
 - **Start at login**, light and dark mode.
 - **Updates itself, when you say so.** A notification tells you once when a new version is out (click it to open nibble), and a dot on the menu bar icon stays while it is ready; the popover offers to install it and restart.
 
@@ -55,10 +55,10 @@ nibble, a cheese-loving mouse, eats through a wedge as your usage adds up. It ce
 
 1. nibble reads the session logs Claude Code writes to `~/.claude/projects` (or `$CLAUDE_CONFIG_DIR`) and counts the tokens of every response, by model and token kind.
 2. It prices them with a bundled catalog of Anthropic's API rates ([`catalog.json`](crates/nibble-adapters/data/catalog.json)). Each entry records its source page and the date it was checked.
-3. It divides your plan's monthly price over the year's weeks (price × 12 ÷ 52) to get a **weekly share**, and compares this week's API value with it.
+3. It compares today's API value, from local midnight, with your plan's **whole monthly price**.
 4. For the suggestions, it looks at the last 30 days of usage, and at the limit usage Claude Code caches in `~/.claude.json`.
 
-Terms like _weekly share_, _paid off_ and _multiplier_ are defined in [GLOSSARY.md](GLOSSARY.md), and the reasoning behind each decision is in [docs/adr](docs/adr).
+Terms like _break-even progress_, _paid off_ and _multiplier_ are defined in [GLOSSARY.md](GLOSSARY.md), and the reasoning behind each decision is in [docs/adr](docs/adr).
 
 ### What nibble counts
 

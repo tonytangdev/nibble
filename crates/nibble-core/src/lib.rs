@@ -5,6 +5,7 @@
 
 mod assess;
 mod catalog;
+mod day;
 mod money;
 mod ports;
 mod rules;
@@ -15,6 +16,7 @@ mod week;
 
 pub use assess::{Assessment, Combined, Inputs, Report, assess};
 pub use catalog::{ModelRates, PlanOffer, PriceCatalog, Rates};
+pub use day::Day;
 pub use money::Usd;
 pub use ports::{CatalogSource, ProviderSnapshot, ProviderSource, SourceError};
 pub use subscription::{PlanId, ProviderId, SeatKind, Subscription, SubscriptionId};

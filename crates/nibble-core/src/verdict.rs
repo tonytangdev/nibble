@@ -2,7 +2,7 @@
 
 use crate::{PlanId, Usd};
 
-/// API value as a share of the Weekly share, in basis points (10,000 is 100%, or `1.0×`).
+/// Today's API value as a share of the Plan price, in basis points (10,000 is 100%, or `1.0×`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Progress(u64);
 
@@ -33,7 +33,7 @@ impl Progress {
     }
 }
 
-/// The cheese icon: what is left of the Weekly share to eat through.
+/// The cheese icon: what is left of the Plan price to eat through today.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Wedge {
     /// Under 25% of break-even.
@@ -67,7 +67,7 @@ pub enum Mood {
     Sleepy,
     /// On the way to Paid off.
     Nibbling,
-    /// This Week's API value has reached the Weekly share.
+    /// Today's API value has reached the Plan price.
     PaidOff,
     /// The user keeps running into Limit windows.
     StillHungry,

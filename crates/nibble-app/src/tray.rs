@@ -2,7 +2,7 @@
 //!
 //! When the Wedge changes, the icon glides to the new one through a strip of fine frames:
 //! the wedge shrinks a percent at a time, fades into crumbs, then into the paid-off
-//! outline as its check draws in. It plays backwards when the week resets.
+//! outline as its check draws in. It plays backwards when a new day starts.
 //!
 //! A dot in the top-left corner, where every frame is empty, says a new version is ready.
 
@@ -33,6 +33,13 @@ const TICK: Duration = Duration::from_millis(33);
 pub(crate) const ID: &str = "nibble";
 /// The popover window's label, as in `tauri.conf.json`.
 pub(crate) const POPOVER: &str = "popover";
+/// How soon after the popover hid itself a click on the icon still counts as closing it.
+/// Pressing the icon takes focus from the popover, which hides it before the click lands.
+const CLOSING_CLICK: Duration = Duration::from_millis(400);
+
+/// When the popover last hid itself because it lost focus.
+#[derive(Default)]
+struct Blurred(Mutex<Option<Instant>>);
 
 /// What the animator should be showing, set by each refresh.
 #[derive(Default)]
@@ -52,6 +59,7 @@ struct Animation(Mutex<Goal>);
 /// Builds the tray icon with its click and menu behaviour.
 pub(crate) fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<TrayIcon<R>> {
     app.manage(Animation::default());
+    app.manage(Blurred::default());
     let frames = frames()?;
     let first = frames
         .first()
@@ -91,11 +99,31 @@ fn toggle_popover<R: Runtime>(app: &AppHandle<R>) {
     let Some(window) = app.get_webview_window(POPOVER) else {
         return;
     };
+    let blurred = app
+        .state::<Blurred>()
+        .0
+        .lock()
+        .ok()
+        .and_then(|guard| *guard);
     if window.is_visible().unwrap_or(false) {
         let _hidden = window.hide();
-    } else {
+    } else if !closed_by(blurred, Instant::now()) {
         show_popover(app, &window);
     }
+}
+
+/// Hides the popover when it loses focus, noting when, so the click that took the focus
+/// does not open it again.
+pub(crate) fn hide_on_blur<R: Runtime>(window: &tauri::Window<R>) {
+    if let Ok(mut blurred) = window.app_handle().state::<Blurred>().0.lock() {
+        *blurred = Some(Instant::now());
+    }
+    let _hidden = window.hide();
+}
+
+/// Whether a click at `now` is the one that hid the popover at `blurred`.
+fn closed_by(blurred: Option<Instant>, now: Instant) -> bool {
+    blurred.is_some_and(|at| now.saturating_duration_since(at) < CLOSING_CLICK)
 }
 
 /// Shows the popover under the tray icon without a click on it, e.g. from a notification.
@@ -303,4 +331,27 @@ fn with_dot(frame: &[u8]) -> Vec<u8> {
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::{Duration, Instant};
+
+    use super::closed_by;
+
+    #[test]
+    fn a_click_right_after_the_popover_hid_itself_only_closes_it() {
+        let blurred = Instant::now();
+        assert!(closed_by(
+            Some(blurred),
+            blurred + Duration::from_millis(150)
+        ));
+    }
+
+    #[test]
+    fn a_later_click_opens_the_popover_again() {
+        let blurred = Instant::now();
+        assert!(!closed_by(Some(blurred), blurred + Duration::from_secs(2)));
+        assert!(!closed_by(None, blurred));
+    }
 }

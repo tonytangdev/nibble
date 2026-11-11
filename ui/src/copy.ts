@@ -16,7 +16,7 @@ export function headline(view: View): string {
     case "nibbling":
       return `Nibbling through ${plan}`;
     case "paidOff":
-      return `${plan} has paid for itself`;
+      return `${plan} has paid for itself today`;
     case "sleepy":
       return "nibble is getting sleepy";
     case "stillHungry":
@@ -35,15 +35,18 @@ export function suggestionText(suggestion: Suggestion, plan: string): string {
   }
 }
 
-/** How far along the Week is toward paying for itself, e.g. `68% paid off`, then `Paid off`. */
+/** How far today is toward paying for the whole month, e.g. `68% paid off`, then `Paid off`. */
 export function progressText(view: View): string | null {
   if (view.progressPercent === null) return null;
   return view.multiplier === null ? `${String(view.progressPercent)}% paid off` : "Paid off";
 }
 
-export function weeklyReset(view: View): string | null {
-  if (view.hoursLeft === null || view.resetsOn === null) return null;
-  return `Resets ${view.resetsOn} · ${timeLeft(view.hoursLeft)}`;
+/** When today's count starts over at local midnight, e.g. `Resets in 4 hours`. */
+export function dailyReset(view: View): string | null {
+  if (view.hoursLeft === null) return null;
+  const hours = view.hoursLeft;
+  if (hours < 1) return "Resets in under an hour";
+  return hours === 1 ? "Resets in 1 hour" : `Resets in ${String(hours)} hours`;
 }
 
 /** What to say while there is nothing to assess. */
@@ -62,11 +65,4 @@ export function waiting(status: View["status"]): { title: string; body: string }
     default:
       return { title: "Counting crumbs…", body: "nibble is reading Claude Code’s logs." };
   }
-}
-
-function timeLeft(hours: number): string {
-  if (hours < 1) return "under an hour left";
-  if (hours < 24) return hours === 1 ? "1 hour left" : `${String(hours)} hours left`;
-  const days = Math.floor(hours / 24);
-  return days === 1 ? "1 day left" : `${String(days)} days left`;
 }

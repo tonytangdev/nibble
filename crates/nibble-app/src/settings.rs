@@ -7,16 +7,16 @@ use chrono::{DateTime, Utc};
 use nibble_core::{Dismissal, PlanId, Subscription, SubscriptionId, Usd};
 use serde::{Deserialize, Serialize};
 
-/// What the user chose, plus which once-a-Week moments already happened.
+/// What the user chose, plus which once-a-Day moments already happened.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub(crate) struct Settings {
     /// Suggestions dismissed with "Not now".
     pub(crate) dismissals: Vec<StoredDismissal>,
-    /// The start of the Week whose Paid off notification was sent.
-    pub(crate) notified_week: Option<DateTime<Utc>>,
-    /// The start of the Week whose Paid off card was seen.
-    pub(crate) celebrated_week: Option<DateTime<Utc>>,
+    /// The start of the Day whose Paid off notification was sent.
+    pub(crate) notified_day: Option<DateTime<Utc>>,
+    /// The start of the Day whose Paid off card was seen.
+    pub(crate) celebrated_day: Option<DateTime<Utc>>,
     /// Whether the start-at-login question was answered.
     pub(crate) autostart_asked: bool,
     /// Whether the Paid off notification is off.

@@ -15,7 +15,7 @@ export function useOpenCount(): number {
   return opens;
 }
 
-const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+export const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** `target`, eased in from 0 when `replay` changes and from the last value otherwise. */
 export function useCountUp(target: number, replay: number, duration = 700): number {

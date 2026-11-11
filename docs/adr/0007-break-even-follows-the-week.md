@@ -1,5 +1,7 @@
 # Break-even follows the Week, against a Weekly share of the Plan price
 
+Status: break-even now compares today with the whole Plan price instead (ADR-0009). Dismissals still follow the Week.
+
 Supersedes the Billing cycle half of ADR-0002. Sleepy still uses Rolling 30 days against the full Plan price.
 
 The Wedge, Multiplier, Paid off, the Paid off notification and card, and Dismissals now follow the Week: the Provider's 7-day Limit window, from one weekly reset to the next. Its API value is compared with a Weekly share of the Plan price, a year of it spread over 52 weeks (price × 12 ÷ 52). The user feels limits weekly, so a weekly refill is the moment that matches their experience, and the Wedge moves four times as often as it did monthly.
