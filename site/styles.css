@@ -910,6 +910,48 @@ figcaption {
   margin-block: 1.5rem 1.2rem;
 }
 
+.files {
+  max-width: 38rem;
+  margin-bottom: 1.2rem;
+}
+
+.files-title {
+  margin-bottom: 0.5rem;
+  font: 500 0.78rem/1.4 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--soft);
+}
+
+.files dl > div {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+  padding-block: 0.6rem;
+  border-top: 1px solid var(--line);
+}
+
+.files dt {
+  font-weight: 600;
+}
+
+.files li + li {
+  margin-top: 0.25rem;
+}
+
+.files a {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.files li span,
+.files .none {
+  font-size: 0.9rem;
+  color: var(--soft);
+}
+
 .get .fine {
   max-width: 38rem;
 }

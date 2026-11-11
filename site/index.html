@@ -19,7 +19,7 @@
     <meta name="theme-color" content="#0d1718" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/png" href="../crates/nibble-app/icons/64x64.png" />
     <link rel="stylesheet" href="./styles.css" />
-    <!-- The only script on the page: the theme toggle. A theme picked with it is kept in
+    <!-- The theme toggle. A theme picked with it is kept in
          localStorage and applied here, before the page paints; without one, the page
          follows the system. -->
     <script>
@@ -111,9 +111,7 @@
             as your usage adds up.
           </p>
           <div class="cta">
-            <a class="button primary" href="https://github.com/tonytangdev/nibble/releases/latest">
-              Download nibble
-            </a>
+            <a class="button primary" href="release:default" data-download>Download nibble</a>
             <a class="button" href="https://github.com/tonytangdev/nibble">View on GitHub</a>
           </div>
           <p class="fine">Free and open source. For now, nibble counts Claude Code only.</p>
@@ -347,25 +345,12 @@
             <p class="kicker">Download</p>
             <h2>Put nibble in your menu bar</h2>
             <p>macOS comes first. Windows and Linux too.</p>
-            <ul class="platforms">
-              <li>
-                <a
-                  class="button primary"
-                  href="https://github.com/tonytangdev/nibble/releases/latest"
-                  >Download for macOS</a
-                >
-              </li>
-              <li>
-                <a class="button" href="https://github.com/tonytangdev/nibble/releases/latest"
-                  >Windows</a
-                >
-              </li>
-              <li>
-                <a class="button" href="https://github.com/tonytangdev/nibble/releases/latest"
-                  >Linux</a
-                >
-              </li>
-            </ul>
+            <p class="platforms">
+              <a class="button primary" href="release:default" data-download="label"
+                >Download for macOS</a
+              >
+            </p>
+            <div id="files" class="files"><!-- release:downloads --></div>
             <p class="fine handoff">
               Not at your computer?
               <a
@@ -403,5 +388,34 @@
       </p>
       <p>nibble is an independent app. It is not affiliated with Anthropic.</p>
     </footer>
+    <!-- Points each download button at the latest release's file for the visitor's system.
+         The build has already pointed them at the macOS file, for visitors without scripts. A
+         phone or a tablet keeps that, as nibble cannot run there. -->
+    <script>
+      (() => {
+        const platform = navigator.userAgentData?.platform ?? navigator.platform ?? "";
+        const agent = navigator.userAgent;
+        const touch = navigator.maxTouchPoints > 1;
+        let os = null;
+        if (/android|iphone|ipad/i.test(agent)) os = null;
+        else if (/mac/i.test(platform)) os = touch ? null : "macos";
+        else if (/win/i.test(platform)) os = "windows";
+        else if (/linux|x11|cros/i.test(platform + agent)) os = "linux";
+        if (os === null) return;
+
+        const names = { macos: "macOS", windows: "Windows", linux: "Linux" };
+        const files = [...document.querySelectorAll(`#files a[data-os="${os}"]`)];
+        // Apple silicon first on a Mac: a browser there cannot tell the chip.
+        const file =
+          files.find((link) => link.dataset.arch === (os === "macos" ? "arm64" : "x64")) ??
+          files[0];
+        for (const button of document.querySelectorAll("[data-download]")) {
+          button.href = file ? file.href : "#files";
+          if (button.dataset.download === "label") {
+            button.textContent = file ? `Download for ${names[os]}` : `No ${names[os]} build yet`;
+          }
+        }
+      })();
+    </script>
   </body>
 </html>

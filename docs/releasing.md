@@ -34,7 +34,8 @@ and run the wizard again.
    release with generated notes.
 4. Download the `.dmg` from the draft, install it, and open it: macOS should open it without a
    warning. Edit the notes, then publish. Publishing is what makes it `latest`, for both the
-   download links and the updater.
+   download links and the updater. Publishing also redeploys the website, whose download list
+   shows the latest release's files.
 
 ## Trying a build without the secrets
 
