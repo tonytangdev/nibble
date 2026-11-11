@@ -5,3 +5,4 @@ node_modules/
 # Tauri generated schemas
 crates/nibble-app/gen
 ui/dist
+site/dist

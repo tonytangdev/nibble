@@ -99,6 +99,7 @@ You also need Claude Code installed and signed in, or nibble has nothing to read
 pnpm dev      # build and run the app
 pnpm ui:dev   # just the popover, in a browser, with sample data
 pnpm check    # formatters, lints, tests and licence checks
+pnpm site:dev # the landing page in site/, on port 5174
 ```
 
 `pnpm ui:dev` serves the popover at <http://localhost:5173> with no Rust build. Pick a sample state with `?state=`, e.g. `?state=paidOff`; the samples are in [`ui/src/preview.ts`](ui/src/preview.ts). Set `NIBBLE_DATA_DIR` to keep settings and history in another folder, e.g. for demo data.
