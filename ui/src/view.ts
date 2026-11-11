@@ -14,12 +14,17 @@ export interface View {
   prompts: { celebrate: boolean; askAutostart: boolean };
   switches: { notifications: boolean; autostart: boolean; updateChecks: boolean };
   update: Update | null;
+  updateCheck: UpdateCheck | null;
+  version: string;
   error: string | null;
 }
 
 /** A newer version of nibble: found, installing, or failed to install. */
 export type Update =
   { state: "available"; version: string } | { state: "installing" } | { state: "failed" };
+
+/** How a check for a new version that the user asked for went. */
+export type UpdateCheck = "checking" | "upToDate" | "found" | "failed";
 
 export type Mood = "sleepy" | "nibbling" | "paidOff" | "stillHungry";
 
@@ -43,5 +48,7 @@ export const loading: View = {
   prompts: { celebrate: false, askAutostart: false },
   switches: { notifications: true, autostart: false, updateChecks: true },
   update: null,
+  updateCheck: null,
+  version: "",
   error: null,
 };

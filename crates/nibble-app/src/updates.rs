@@ -10,6 +10,12 @@ pub(crate) fn due(last_check: Option<DateTime<Utc>>, now: DateTime<Utc>, checks_
     checks_on && last_check.is_none_or(|last| now - last >= CHECK_EVERY)
 }
 
+/// Whether the popover offers a found version: always while checks are on, and with
+/// them off only when the user asked for it.
+pub(crate) fn offer(checks_on: bool, asked: bool) -> bool {
+    checks_on || asked
+}
+
 /// Whether to tell the user about `found` with a notification: once per version, so a
 /// relaunch or the next daily check stays quiet.
 pub(crate) fn announce(found: &str, announced: Option<&str>) -> bool {
@@ -20,12 +26,23 @@ pub(crate) fn announce(found: &str, announced: Option<&str>) -> bool {
 mod tests {
     use chrono::{DateTime, TimeDelta, Utc};
 
-    use super::{announce, due};
+    use super::{announce, due, offer};
 
     #[test]
     fn announces_a_new_version() {
         assert!(announce("0.2.0", None));
         assert!(announce("0.3.0", Some("0.2.0")));
+    }
+
+    #[test]
+    fn offers_a_found_version_while_checks_are_on() {
+        assert!(offer(true, false));
+    }
+
+    #[test]
+    fn with_checks_off_offers_only_what_the_user_asked_for() {
+        assert!(!offer(false, false));
+        assert!(offer(false, true));
     }
 
     #[test]

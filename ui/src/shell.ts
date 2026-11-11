@@ -12,6 +12,7 @@ export type Command =
   | { name: "answer_autostart"; enable: boolean }
   | { name: "set_notifications"; on: boolean }
   | { name: "set_update_checks"; on: boolean }
+  | { name: "check_for_update" }
   | { name: "install_update" }
   | { name: "quit" };
 
@@ -20,6 +21,9 @@ export type Command =
  * shows the sample Views from preview.ts instead.
  */
 const inShell = "__TAURI_INTERNALS__" in window;
+
+/** True in a plain browser tab, where the popover shows sample Views. */
+export const previewing = !inShell;
 
 export function getView(): Promise<View> {
   return inShell ? invoke<View>("get_view") : Promise.resolve(previewView());

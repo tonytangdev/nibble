@@ -16,7 +16,7 @@ use tauri_plugin_updater::{Update, UpdaterExt};
 use crate::settings::{Settings, StoredDismissal};
 use crate::tray;
 use crate::updates;
-use crate::view::{self, Prompts, Status, Switches, UpdateView, View};
+use crate::view::{self, CheckView, Prompts, Status, Switches, UpdateView, View};
 
 /// How often nibble rereads the logs while idle.
 const REFRESH_EVERY: Duration = Duration::from_secs(60);
@@ -38,6 +38,8 @@ struct Shell {
     last_update_check: Option<DateTime<Utc>>,
     /// The newer version found this run, if any.
     pending: Option<Pending>,
+    /// How the last check the user asked for went, this run.
+    asked_check: Option<CheckView>,
 }
 
 /// A newer version, kept to install it, and how far installing it got.
@@ -114,7 +116,7 @@ pub(crate) fn run() -> tauri::Result<()> {
             if !cfg!(debug_assertions) {
                 thread::spawn(move || {
                     loop {
-                        check_for_update(&handle);
+                        check_for_update(&handle, false);
                         thread::sleep(UPDATE_TICK);
                     }
                 });
@@ -133,6 +135,7 @@ pub(crate) fn run() -> tauri::Result<()> {
             commands::answer_autostart,
             commands::set_notifications,
             commands::set_update_checks,
+            commands::check_for_update,
             commands::install_update,
             commands::quit
         ])
@@ -162,6 +165,7 @@ fn new_shell<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Shell> {
         day: None,
         last_update_check: None,
         pending: None,
+        asked_check: None,
     })
 }
 
@@ -193,10 +197,15 @@ fn refresh<R: Runtime>(app: &AppHandle<R>) {
         autostart: app.autolaunch().is_enabled().unwrap_or(false),
         update_checks: !shell.settings.update_checks_off,
     };
-    // With checks off, a found version stops nagging, but an install under way still shows.
+    // With checks off, a found version stops nagging unless the user asked for it, but an
+    // install under way still shows.
+    let asked = shell.asked_check == Some(CheckView::Found);
     view.update = shell.pending.as_ref().map(Pending::view).filter(|update| {
-        view.switches.update_checks || !matches!(update, UpdateView::Available { .. })
+        updates::offer(view.switches.update_checks, asked)
+            || !matches!(update, UpdateView::Available { .. })
     });
+    view.update_check = shell.asked_check;
+    view.version = app.package_info().version.to_string();
     tray::badge(app, view.update.is_some());
     shell.view = view.clone();
     drop(shell);
@@ -276,9 +285,10 @@ fn notify_paid_off<R: Runtime>(app: &AppHandle<R>, shell: &mut Shell, view: &Vie
     save(shell);
 }
 
-/// Asks GitHub for a newer version, if a check is due. A failed check stays quiet and is
-/// retried at the next hourly tick.
-fn check_for_update<R: Runtime>(app: &AppHandle<R>) {
+/// Asks GitHub for a newer version: if a check is due, or right away when the user asked
+/// (`asked`). A failed check the user did not ask for stays quiet and is retried at the
+/// next hourly tick.
+fn check_for_update<R: Runtime>(app: &AppHandle<R>, asked: bool) {
     let state = app.state::<AppState>();
     let now = Utc::now();
     // Claim this check before the network call, so a second caller meanwhile skips it.
@@ -287,13 +297,22 @@ fn check_for_update<R: Runtime>(app: &AppHandle<R>) {
             return;
         };
         let checks_on = !shell.settings.update_checks_off;
-        if shell.pending.as_ref().is_some_and(Pending::installing)
-            || !updates::due(shell.last_update_check, now, checks_on)
-        {
+        let wanted = if asked {
+            shell.asked_check != Some(CheckView::Checking)
+        } else {
+            updates::due(shell.last_update_check, now, checks_on)
+        };
+        if shell.pending.as_ref().is_some_and(Pending::installing) || !wanted {
             return;
+        }
+        if asked {
+            shell.asked_check = Some(CheckView::Checking);
         }
         shell.last_update_check.replace(now)
     };
+    if asked {
+        refresh(app);
+    }
     let found = app
         .updater()
         .map(|updater| tauri::async_runtime::block_on(updater.check()));
@@ -302,24 +321,46 @@ fn check_for_update<R: Runtime>(app: &AppHandle<R>) {
     };
     let Ok(Ok(found)) = found else {
         shell.last_update_check = previous;
+        if asked {
+            shell.asked_check = Some(CheckView::Failed);
+            drop(shell);
+            refresh_soon(app);
+        }
         return;
     };
     if shell.pending.as_ref().is_some_and(Pending::installing) {
         return;
     }
+    if asked {
+        shell.asked_check = Some(if found.is_some() {
+            CheckView::Found
+        } else {
+            CheckView::UpToDate
+        });
+    }
     if let Some(update) = &found {
-        notify_update(app, &mut shell, &update.version);
+        // The user who asked is looking at the answer already; a notification would echo it.
+        notify_update(app, &mut shell, &update.version, !asked);
     }
     shell.pending = found.map(Pending::found);
     drop(shell);
     refresh_soon(app);
 }
 
-/// Sends the update notification once per version.
-fn notify_update<R: Runtime>(app: &AppHandle<R>, shell: &mut Shell, version: &str) {
+/// Sends the update notification once per version. With `show` false, only marks the
+/// version as announced, so a later check stays quiet about it.
+fn notify_update<R: Runtime>(app: &AppHandle<R>, shell: &mut Shell, version: &str, show: bool) {
     if !updates::announce(version, shell.settings.announced_version.as_deref()) {
         return;
     }
+    if show {
+        notify_new_version(app, version);
+    }
+    shell.settings.announced_version = Some(version.to_owned());
+    save(shell);
+}
+
+fn notify_new_version<R: Runtime>(app: &AppHandle<R>, version: &str) {
     let _shown = app
         .notification()
         .builder()
@@ -328,8 +369,6 @@ fn notify_update<R: Runtime>(app: &AppHandle<R>, shell: &mut Shell, version: &st
             "Version {version} is ready to install. Click to open nibble."
         ))
         .show();
-    shell.settings.announced_version = Some(version.to_owned());
-    save(shell);
 }
 
 /// Downloads and installs the update found, then restarts into it.
@@ -457,8 +496,14 @@ mod commands {
         });
         // Turning checks back on looks right away, not at the next hourly tick.
         if on && !cfg!(debug_assertions) {
-            std::thread::spawn(move || super::check_for_update(&app));
+            std::thread::spawn(move || super::check_for_update(&app, false));
         }
+    }
+
+    /// Looks for a new version now, even with the daily checks off.
+    #[tauri::command]
+    pub(super) fn check_for_update<R: Runtime>(app: AppHandle<R>) {
+        std::thread::spawn(move || super::check_for_update(&app, true));
     }
 
     #[tauri::command]

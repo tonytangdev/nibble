@@ -6,6 +6,7 @@ import { loading, type View } from "./view";
  */
 const ready: View = {
   ...loading,
+  version: "0.1.1",
   status: "ready",
   plan: "Max",
   valueCents: 6800,
@@ -61,6 +62,15 @@ const samples = {
   updateAvailable: { ...ready, update: { state: "available", version: "0.2.0" } },
   updating: { ...ready, update: { state: "installing" } },
   updateFailed: { ...ready, update: { state: "failed" } },
+  // These show on the Settings screen, under "Look for one now".
+  checking: { ...ready, updateCheck: "checking" },
+  upToDate: { ...ready, updateCheck: "upToDate" },
+  checkFound: {
+    ...ready,
+    updateCheck: "found",
+    update: { state: "available", version: "0.2.0" },
+  },
+  checkFailed: { ...ready, updateCheck: "failed" },
   firstRun: { ...ready, prompts: { celebrate: false, askAutostart: true } },
   unpriced: { ...ready, unpricedResponses: 12, lowerBound: true },
   error: { ...ready, error: "Couldn’t read Claude Code’s logs. Showing the last reading." },

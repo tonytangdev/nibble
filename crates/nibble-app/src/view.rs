@@ -26,6 +26,10 @@ pub(crate) struct View {
     pub(crate) switches: Switches,
     /// A newer version, once one is found.
     pub(crate) update: Option<UpdateView>,
+    /// How the last check the user asked for went, this run.
+    pub(crate) update_check: Option<CheckView>,
+    /// The version running now, e.g. `0.1.1`.
+    pub(crate) version: String,
     pub(crate) error: Option<String>,
 }
 
@@ -50,6 +54,20 @@ pub(crate) enum UpdateView {
     /// Downloading and installing; nibble restarts when done.
     Installing,
     /// The install did not finish; the user can try again.
+    Failed,
+}
+
+/// How a check for a new version that the user asked for went.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum CheckView {
+    /// Asking GitHub now.
+    Checking,
+    /// No newer version.
+    UpToDate,
+    /// A newer version; `update` says which.
+    Found,
+    /// GitHub could not be reached, or answered nonsense.
     Failed,
 }
 
@@ -168,7 +186,7 @@ const fn cents(micros: u64) -> u64 {
 mod tests {
     use serde_json::{Value, json};
 
-    use super::{Switches, UpdateView, View};
+    use super::{CheckView, Switches, UpdateView, View};
 
     fn json_of(view: View) -> Value {
         serde_json::to_value(view).expect("a View serializes")
@@ -210,5 +228,17 @@ mod tests {
     #[test]
     fn no_update_is_null() {
         assert_eq!(json_of(View::default())["update"], Value::Null);
+    }
+
+    #[test]
+    fn a_check_the_user_asked_for_is_a_plain_state() {
+        let json = json_of(View {
+            update_check: Some(CheckView::UpToDate),
+            version: "0.1.1".into(),
+            ..View::default()
+        });
+        assert_eq!(json["updateCheck"], json!("upToDate"));
+        assert_eq!(json["version"], json!("0.1.1"));
+        assert_eq!(json_of(View::default())["updateCheck"], Value::Null);
     }
 }

@@ -342,7 +342,8 @@ h1 {
 }
 
 .callout button,
-.celebrate button {
+.celebrate button,
+.row button {
   align-self: flex-start;
   padding: 3px 12px;
   font: 500 12.5px/1.5 var(--body);
@@ -352,16 +353,19 @@ h1 {
   transition: background-color 120ms;
 }
 
-.callout button:hover {
+.callout button:hover,
+.row button:hover:not(:disabled) {
   background: var(--wash);
 }
 
-.callout button.primary {
+.callout button.primary,
+.row button.primary {
   color: var(--on-accent);
   background: var(--accent);
 }
 
-.callout button.primary:hover {
+.callout button.primary:hover,
+.row button.primary:hover {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
 }
@@ -414,7 +418,8 @@ footer a:hover,
   background: var(--raised);
 }
 
-.switch {
+.switch,
+.row {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -422,16 +427,19 @@ footer a:hover,
   text-align: left;
 }
 
-.switch + .switch {
+.switch + .switch,
+.switch + .row {
   border-top: 1px solid var(--line);
 }
 
-.switch .text {
+.switch .text,
+.row .text {
   flex: 1;
   font-size: 13.5px;
 }
 
-.switch small {
+.switch small,
+.row small {
   display: block;
   font-size: 11.5px;
   color: var(--soft);
@@ -464,6 +472,17 @@ footer a:hover,
 
 .switch[aria-checked="true"] .track::after {
   translate: 14px;
+}
+
+.row button {
+  flex: none;
+  align-self: center;
+  white-space: nowrap;
+}
+
+.row button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .about {

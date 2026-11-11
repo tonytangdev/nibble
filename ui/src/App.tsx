@@ -13,7 +13,7 @@ import sleepy from "../../design/nibble-sleepy.svg?raw";
 import stillHungry from "../../design/nibble-still-hungry.svg?raw";
 import { dailyReset, dollars, headline, progressText, suggestionText, waiting } from "./copy";
 import { reducedMotion, useCountUp, useOpenCount } from "./motion";
-import { getView, onView, openExternal, send } from "./shell";
+import { getView, onView, openExternal, previewing, send } from "./shell";
 import { loading, type Mood, type Update, type View } from "./view";
 
 /** The mood drawings as SVG markup, inlined so CSS can animate their parts. */
@@ -429,6 +429,7 @@ function Settings({ view, onClose }: { view: View; onClose: () => void }) {
             send({ name: "set_update_checks", on });
           }}
         />
+        <UpdateRow view={view} />
       </section>
       <section className="about">
         <h2>What nibble counts</h2>
@@ -451,6 +452,67 @@ function Settings({ view, onClose }: { view: View; onClose: () => void }) {
         </button>
       </footer>
     </main>
+  );
+}
+
+/**
+ * The running version, and a button to look for a newer one now. What it found shows only
+ * after a click on this visit, so an old answer never reads as today's. A preview tab has
+ * nobody to click for, so it shows the sample's answer straight away.
+ */
+function UpdateRow({ view }: { view: View }) {
+  const [asked, setAsked] = useState(previewing);
+  const check = () => {
+    setAsked(true);
+    send({ name: "check_for_update" });
+  };
+  const install = () => {
+    send({ name: "install_update" });
+  };
+  const version = view.version ? `nibble ${view.version}` : "nibble";
+  let hint = "Look for a new version now.";
+  let action: ReactNode = (
+    <button type="button" onClick={check}>
+      Check now
+    </button>
+  );
+  if (view.update?.state === "installing") {
+    hint = "Installing the update. nibble will be right back.";
+    action = null;
+  } else if (view.update?.state === "failed") {
+    hint = "The update slipped away before it could settle in.";
+    action = (
+      <button type="button" onClick={install}>
+        Try again
+      </button>
+    );
+  } else if (asked && view.updateCheck === "checking") {
+    hint = "Asking GitHub…";
+    action = (
+      <button type="button" disabled>
+        Checking…
+      </button>
+    );
+  } else if (asked && view.update?.state === "available") {
+    hint = `A fresh nibble is ready: version ${view.update.version}.`;
+    action = (
+      <button type="button" className="primary" onClick={install}>
+        Install & restart
+      </button>
+    );
+  } else if (asked && view.updateCheck === "upToDate") {
+    hint = "This is the newest nibble. All caught up.";
+  } else if (asked && view.updateCheck === "failed") {
+    hint = "nibble couldn’t reach GitHub. Try again in a bit.";
+  }
+  return (
+    <div className="row" aria-live="polite">
+      <span className="text">
+        {version}
+        <small>{hint}</small>
+      </span>
+      {action}
+    </div>
   );
 }
 
