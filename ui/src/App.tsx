@@ -7,7 +7,7 @@ import stillHungry from "../../design/nibble-still-hungry.svg?raw";
 import { dollars, headline, progressText, suggestionText, waiting, weeklyReset } from "./copy";
 import { useCountUp, useOpenCount } from "./motion";
 import { getView, onView, openExternal, send } from "./shell";
-import { loading, type Mood, type View } from "./view";
+import { loading, type Mood, type Update, type View } from "./view";
 
 /** The mood drawings as SVG markup, inlined so CSS can animate their parts. */
 const mascots: Record<Mood, string> = { nibbling, paidOff, sleepy, stillHungry };
@@ -71,6 +71,7 @@ export function App() {
       </header>
       <section className="body">
         {view.status === "ready" ? <Reading view={view} opens={opens} /> : <Waiting view={view} />}
+        {view.update && <UpdatePrompt update={view.update} />}
         {view.prompts.askAutostart && <AutostartPrompt />}
       </section>
       <Footer />
@@ -239,6 +240,42 @@ function AutostartPrompt() {
   );
 }
 
+function UpdatePrompt({ update }: { update: Update }) {
+  const install = () => {
+    send({ name: "install_update" });
+  };
+  switch (update.state) {
+    case "available":
+      return (
+        <aside className="callout">
+          <p>A fresh nibble is ready: version {update.version}.</p>
+          <div className="actions">
+            <button type="button" className="primary" onClick={install}>
+              Install & restart
+            </button>
+          </div>
+        </aside>
+      );
+    case "installing":
+      return (
+        <aside className="callout" aria-live="polite">
+          <p>Installing the update. nibble will be right back.</p>
+        </aside>
+      );
+    case "failed":
+      return (
+        <aside className="callout" aria-live="polite">
+          <p>The update didn’t install.</p>
+          <div className="actions">
+            <button type="button" onClick={install}>
+              Try again
+            </button>
+          </div>
+        </aside>
+      );
+  }
+}
+
 function Footer() {
   return (
     <footer>
@@ -250,8 +287,9 @@ function Footer() {
 
 function Settings({ view, onClose }: { view: View; onClose: () => void }) {
   // The shell answers a moment later, so the switches move on the click.
-  const [notify, setNotify] = useState(view.notificationsOn);
-  const [autostart, setAutostart] = useState(view.autostartOn);
+  const [notify, setNotify] = useState(view.switches.notifications);
+  const [autostart, setAutostart] = useState(view.switches.autostart);
+  const [updateChecks, setUpdateChecks] = useState(view.switches.updateChecks);
   return (
     <main className="card settings">
       <header className="bar">
@@ -277,6 +315,15 @@ function Settings({ view, onClose }: { view: View; onClose: () => void }) {
           onChange={(enable) => {
             setAutostart(enable);
             send({ name: "answer_autostart", enable });
+          }}
+        />
+        <Switch
+          label="Check for updates"
+          hint="Once a day, nibble asks GitHub for a new version."
+          on={updateChecks}
+          onChange={(on) => {
+            setUpdateChecks(on);
+            send({ name: "set_update_checks", on });
           }}
         />
       </section>

@@ -21,6 +21,8 @@ pub(crate) struct Settings {
     pub(crate) autostart_asked: bool,
     /// Whether the Paid off notification is off.
     pub(crate) notifications_off: bool,
+    /// Whether nibble no longer looks for new versions.
+    pub(crate) update_checks_off: bool,
     /// Plan and price the user set by hand.
     pub(crate) overrides: Overrides,
 }
@@ -76,5 +78,38 @@ impl Settings {
             detected.price_override = Some(Usd::from_cents(cents));
         }
         detected
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+    use std::path::PathBuf;
+
+    use super::Settings;
+
+    /// Loads `json` the way the app does, from a file.
+    fn load(name: &str, json: &str) -> Settings {
+        let path: PathBuf = std::env::temp_dir().join(format!("nibble-settings-{name}.json"));
+        fs::write(&path, json).expect("write the test settings");
+        let settings = Settings::load(&path);
+        let _removed = fs::remove_file(&path);
+        settings
+    }
+
+    #[test]
+    fn settings_from_before_update_checks_keep_them_on() {
+        let settings = load(
+            "old",
+            r#"{ "autostartAsked": true, "notificationsOff": true }"#,
+        );
+        assert!(settings.autostart_asked);
+        assert!(!settings.update_checks_off);
+    }
+
+    #[test]
+    fn update_checks_can_be_turned_off() {
+        let settings = load("off", r#"{ "updateChecksOff": true }"#);
+        assert!(settings.update_checks_off);
     }
 }

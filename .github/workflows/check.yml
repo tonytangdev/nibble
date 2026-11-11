@@ -3,6 +3,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The release workflow runs the same checks before it builds.
+  workflow_call:
 
 jobs:
   check:
@@ -26,6 +28,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - uses: Swatinem/rust-cache@v2
       - run: pnpm fmt:check
+      - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
 

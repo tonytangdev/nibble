@@ -26,6 +26,12 @@ allow = [
 ]
 confidence-threshold = 0.9
 
+# Mozilla's root certificates, which the updater uses to reach GitHub over HTTPS. CDLA-Permissive
+# is a permissive license for data, so it is allowed for this crate only.
+[[licenses.exceptions]]
+crate = "webpki-root-certs"
+allow = ["CDLA-Permissive-2.0"]
+
 [licenses.private]
 ignore = true
 

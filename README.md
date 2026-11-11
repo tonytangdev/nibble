@@ -12,6 +12,12 @@ pnpm dev      # run the app
 pnpm check    # formatters, lints, tests and licence checks
 ```
 
+Releases are built and signed by CI from a version tag; see [docs/releasing.md](docs/releasing.md).
+
+## Privacy
+
+nibble reads Claude Code's logs on your computer and sends nothing about them anywhere. Its only network request is the update check: once a day it fetches `latest.json` from this repository's GitHub Releases. Turn that off in Settings with "Check for updates".
+
 ## Support
 
 If nibble is useful to you, you can [buy me a coffee](https://buymeacoffee.com/tonytangdev) ☕

@@ -4,6 +4,7 @@
 mod settings;
 mod shell;
 mod tray;
+mod updates;
 mod view;
 
 fn main() {

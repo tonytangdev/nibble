@@ -51,5 +51,11 @@
     "macOS": {
       "minimumSystemVersion": "13.0"
     }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "",
+      "endpoints": ["https://github.com/tonytangdev/nibble/releases/latest/download/latest.json"]
+    }
   }
 }

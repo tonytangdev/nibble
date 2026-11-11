@@ -13,10 +13,14 @@ export interface View {
   hoursLeft: number | null;
   unpricedResponses: number;
   prompts: { celebrate: boolean; askAutostart: boolean };
-  notificationsOn: boolean;
-  autostartOn: boolean;
+  switches: { notifications: boolean; autostart: boolean; updateChecks: boolean };
+  update: Update | null;
   error: string | null;
 }
+
+/** A newer version of nibble: found, installing, or failed to install. */
+export type Update =
+  { state: "available"; version: string } | { state: "installing" } | { state: "failed" };
 
 export type Mood = "sleepy" | "nibbling" | "paidOff" | "stillHungry";
 
@@ -39,7 +43,7 @@ export const loading: View = {
   hoursLeft: null,
   unpricedResponses: 0,
   prompts: { celebrate: false, askAutostart: false },
-  notificationsOn: true,
-  autostartOn: false,
+  switches: { notifications: true, autostart: false, updateChecks: true },
+  update: null,
   error: null,
 };
