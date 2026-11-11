@@ -35,8 +35,14 @@ export function suggestionText(suggestion: Suggestion, plan: string): string {
   }
 }
 
-export function renewal(view: View): string | null {
-  if (view.daysLeft === null || view.renewsOn === null) return null;
-  const days = view.daysLeft === 1 ? "1 day" : `${String(view.daysLeft)} days`;
-  return `Renews ${view.renewsOn}, in ${days}`;
+export function weeklyReset(view: View): string | null {
+  if (view.hoursLeft === null || view.resetsOn === null) return null;
+  return `Resets ${view.resetsOn}, in ${timeLeft(view.hoursLeft)}`;
+}
+
+function timeLeft(hours: number): string {
+  if (hours < 1) return "under an hour";
+  if (hours < 24) return hours === 1 ? "1 hour" : `${String(hours)} hours`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? "1 day" : `${String(days)} days`;
 }

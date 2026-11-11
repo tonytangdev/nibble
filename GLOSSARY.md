@@ -25,12 +25,12 @@ What the Subscription costs per Billing cycle, in USD: the list price unless the
 _Avoid_: cost, fee
 
 **Billing cycle**:
-The span between two renewals of a Subscription.
+The span between two renewals of a Subscription, a month. nibble does not track when it renews.
 _Avoid_: month, period
 
-**Cycle anchor**:
-The day of the month a Billing cycle starts.
-_Avoid_: renewal date, billing date
+**Weekly share**:
+The Plan price spread evenly over the weeks of a year: Plan price × 12 ÷ 52.
+_Avoid_: weekly price, weekly cost
 
 **Cheaper option**:
 The next step down from the current Plan: the next smaller Plan, or paying the API directly when already on the smallest.
@@ -70,12 +70,16 @@ A span over which the Provider caps usage: the 5-hour window and the 7-day windo
 How much of a Limit window's cap is used, as a percentage.
 
 **Limit reading**:
-One observed Utilization for each Limit window, with when it was observed.
+One observed Utilization for each Limit window, with when it was observed and, when known, when the 7-day window resets.
+
+**Week**:
+The current 7-day Limit window, from one weekly reset to the next; Monday to Monday UTC until a Limit reading reports the reset.
+_Avoid_: cycle, period, calendar week
 
 ## Verdict
 
 **Break-even progress**:
-The current Billing cycle's API value divided by the Plan price.
+The current Week's API value divided by the Weekly share.
 
 **Paid off**:
 Break-even progress at or above 100%.
@@ -103,7 +107,7 @@ The Mood when the user keeps running into Limit windows.
 A recommendation to move to the Cheaper option (downgrade) or the Bigger plan (upgrade).
 
 **Dismissal**:
-The user's "not now" on a Suggestion, lasting until the next Billing cycle.
+The user's "not now" on a Suggestion, lasting until the next Week.
 
 **Assessment**:
 The complete verdict for a moment in time: Break-even progress, Wedge, Multiplier, Mood, Suggestion and Unpriced responses.

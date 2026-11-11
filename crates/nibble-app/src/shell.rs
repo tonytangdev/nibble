@@ -5,7 +5,7 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 
-use chrono::{NaiveDate, Utc};
+use chrono::{DateTime, Utc};
 use nibble_adapters::{ClaudeCode, JsonCatalog};
 use nibble_core::{CatalogSource, Combined, Inputs, ProviderSource, SourceError, assess};
 use tauri::{AppHandle, Emitter, Manager, Runtime, State, WindowEvent};
@@ -28,7 +28,8 @@ struct Shell {
     settings_path: PathBuf,
     view: View,
     subscription: Option<String>,
-    cycle: Option<NaiveDate>,
+    /// The start of the current Week.
+    week: Option<DateTime<Utc>>,
 }
 
 /// The shell, shared between the refresh thread and command handlers.
@@ -84,7 +85,7 @@ fn new_shell<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Shell> {
         settings_path,
         view: View::default(),
         subscription: None,
-        cycle: None,
+        week: None,
     })
 }
 
@@ -141,20 +142,19 @@ fn reassess(shell: &mut Shell) -> Result<(View, Option<Combined>), SourceError> 
         return Ok((View::waiting(Status::SignedOut), None));
     };
     shell.subscription = Some(subscription.id.as_str().to_owned());
-    shell.cycle = Some(assessment.cycle.start);
-    let mut view = view::of(assessment, &subscription, &inputs.catalog);
+    shell.week = Some(assessment.week.start);
+    let mut view = view::of(assessment, &subscription, &inputs.catalog, now);
     view.prompts = Prompts {
-        celebrate: assessment.multiplier.is_some()
-            && shell.settings.celebrated_cycle != shell.cycle,
+        celebrate: assessment.multiplier.is_some() && shell.settings.celebrated_week != shell.week,
         ask_autostart: !shell.settings.autostart_asked,
     };
     view.notifications_on = !shell.settings.notifications_off;
     Ok((view, Some(report.combined)))
 }
 
-/// Sends the Paid off notification once per cycle.
+/// Sends the Paid off notification once a Week.
 fn notify_paid_off<R: Runtime>(app: &AppHandle<R>, shell: &mut Shell, view: &View) {
-    if view.multiplier.is_none() || shell.settings.notified_cycle == shell.cycle {
+    if view.multiplier.is_none() || shell.settings.notified_week == shell.week {
         return;
     }
     if !shell.settings.notifications_off {
@@ -163,10 +163,10 @@ fn notify_paid_off<R: Runtime>(app: &AppHandle<R>, shell: &mut Shell, view: &Vie
             .notification()
             .builder()
             .title("nibble ate the whole wedge")
-            .body(format!("Your {plan} has paid for itself this cycle."))
+            .body(format!("Your {plan} has paid for itself this week."))
             .show();
     }
-    shell.settings.notified_cycle = shell.cycle;
+    shell.settings.notified_week = shell.week;
     save(shell);
 }
 
@@ -225,7 +225,7 @@ mod commands {
     #[tauri::command]
     pub(super) fn celebrated<R: Runtime>(app: AppHandle<R>, state: State<'_, AppState>) {
         update(&app, &state, |shell| {
-            shell.settings.celebrated_cycle = shell.cycle;
+            shell.settings.celebrated_week = shell.week;
         });
     }
 

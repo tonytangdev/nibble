@@ -1,24 +1,26 @@
-//! nibble's own history: a bounded, rebuildable cache of daily usage totals,
+//! nibble's own history: a bounded, rebuildable cache of hourly usage totals,
 //! read bookmarks and limit readings (ADR-0004). It never holds message text.
 
 use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::Path;
 
-use chrono::{DateTime, Days, NaiveDate, NaiveTime, Utc};
+use chrono::{DateTime, Days, DurationRound, NaiveDate, NaiveTime, TimeDelta, Utc};
 use nibble_core::{LimitReading, ProviderId, TokenCounts, UsageRecord};
 use serde::{Deserialize, Serialize};
 
 /// Bumped whenever the stored shape or its meaning changes; other versions are discarded.
-const VERSION: u32 = 1;
-/// How long daily totals and duplicate-detection keys are kept: 13 weeks.
+const VERSION: u32 = 2;
+/// The version that kept daily totals, which still load as midnight hours.
+const DAILY_VERSION: u32 = 1;
+/// How long hourly totals and duplicate-detection keys are kept: 13 weeks.
 const USAGE_DAYS: u64 = 91;
 /// How long limit readings are kept: long enough for Sleepy's Rolling 30 days.
 const LIMIT_DAYS: u64 = 31;
 
-/// Daily totals for one model.
+/// One hour's totals for one model.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct DayTotal {
+pub(crate) struct HourTotal {
     pub(crate) responses: u64,
     pub(crate) input: u64,
     pub(crate) output: u64,
@@ -27,7 +29,7 @@ pub(crate) struct DayTotal {
     pub(crate) cache_write_1h: u64,
 }
 
-impl DayTotal {
+impl HourTotal {
     fn add(&mut self, tokens: &TokenCounts) {
         self.responses += 1;
         self.input += tokens.input;
@@ -52,7 +54,11 @@ impl DayTotal {
 struct Stored {
     version: u32,
     created: DateTime<Utc>,
-    days: Vec<(NaiveDate, String, DayTotal)>,
+    #[serde(default)]
+    hours: Vec<(DateTime<Utc>, String, HourTotal)>,
+    /// Daily totals from version 1, read but never written.
+    #[serde(default, skip_serializing)]
+    days: Vec<(NaiveDate, String, HourTotal)>,
     seen: Vec<(u64, NaiveDate)>,
     bookmarks: BTreeMap<String, u64>,
     limits: Vec<StoredReading>,
@@ -63,13 +69,15 @@ pub(crate) struct StoredReading {
     pub(crate) at: DateTime<Utc>,
     pub(crate) five_hour: Option<u16>,
     pub(crate) seven_day: Option<u16>,
+    #[serde(default)]
+    pub(crate) seven_day_resets_at: Option<DateTime<Utc>>,
 }
 
 /// The cache in memory.
 #[derive(Debug)]
 pub(crate) struct History {
     created: DateTime<Utc>,
-    days: BTreeMap<(NaiveDate, String), DayTotal>,
+    hours: BTreeMap<(DateTime<Utc>, String), HourTotal>,
     /// Hashed response keys with their day, so duplicates are skipped across refreshes.
     seen: HashMap<u64, NaiveDate>,
     /// How many bytes of each log file have been read.
@@ -78,19 +86,20 @@ pub(crate) struct History {
 }
 
 impl History {
-    /// The cache at `path`, or an empty one when it is missing, corrupt or from another version.
+    /// The cache at `path`, or an empty one when it is missing, corrupt or from an unknown
+    /// version.
     pub(crate) fn load(path: &Path, now: DateTime<Utc>) -> Self {
         fs::read(path)
             .ok()
             .and_then(|bytes| serde_json::from_slice::<Stored>(&bytes).ok())
-            .filter(|stored| stored.version == VERSION)
+            .filter(|stored| [VERSION, DAILY_VERSION].contains(&stored.version))
             .map_or_else(|| Self::empty(now), Self::from_stored)
     }
 
     fn empty(now: DateTime<Utc>) -> Self {
         Self {
             created: now,
-            days: BTreeMap::new(),
+            hours: BTreeMap::new(),
             seen: HashMap::new(),
             bookmarks: BTreeMap::new(),
             limits: Vec::new(),
@@ -100,10 +109,12 @@ impl History {
     fn from_stored(stored: Stored) -> Self {
         Self {
             created: stored.created,
-            days: stored
+            hours: stored
                 .days
                 .into_iter()
-                .map(|(day, model, total)| ((day, model), total))
+                .map(|(day, model, total)| (day.and_time(NaiveTime::MIN).and_utc(), model, total))
+                .chain(stored.hours)
+                .map(|(hour, model, total)| ((hour, model), total))
                 .collect(),
             seen: stored.seen.into_iter().collect(),
             bookmarks: stored.bookmarks,
@@ -116,11 +127,12 @@ impl History {
         let stored = Stored {
             version: VERSION,
             created: self.created,
-            days: self
-                .days
+            hours: self
+                .hours
                 .iter()
-                .map(|((day, model), total)| (*day, model.clone(), *total))
+                .map(|((hour, model), total)| (*hour, model.clone(), *total))
                 .collect(),
+            days: Vec::new(),
             seen: self.seen.iter().map(|(key, day)| (*key, *day)).collect(),
             bookmarks: self.bookmarks.clone(),
             limits: self.limits.clone(),
@@ -141,38 +153,35 @@ impl History {
         at: DateTime<Utc>,
         tokens: &TokenCounts,
     ) {
-        let day = at.date_naive();
-        if self.seen.insert(fnv1a(key), day).is_some() {
+        if self.seen.insert(fnv1a(key), at.date_naive()).is_some() {
             return;
         }
-        self.days
-            .entry((day, model.to_owned()))
+        // Truncating to a whole hour only fails for dates chrono cannot represent anyway.
+        let hour = at.duration_trunc(TimeDelta::hours(1)).unwrap_or(at);
+        self.hours
+            .entry((hour, model.to_owned()))
             .or_default()
             .add(tokens);
     }
 
-    /// Daily totals as Usage records for `provider`.
+    /// Hourly totals as Usage records for `provider`.
     pub(crate) fn usage(&self, provider: &ProviderId) -> Vec<UsageRecord> {
-        self.days
+        self.hours
             .iter()
-            .map(|((day, model), total)| UsageRecord {
+            .map(|((hour, model), total)| UsageRecord {
                 provider: provider.clone(),
                 model: model.clone(),
-                at: day.and_time(NaiveTime::MIN).and_utc(),
+                at: *hour,
                 responses: total.responses,
                 tokens: total.tokens(),
             })
             .collect()
     }
 
-    /// The earliest moment the history covers: its first day of usage or its creation.
+    /// The earliest moment the history covers: its first hour of usage or its creation.
     pub(crate) fn start(&self) -> DateTime<Utc> {
-        let first_day = self
-            .days
-            .keys()
-            .next()
-            .map(|(day, _)| day.and_time(NaiveTime::MIN).and_utc());
-        first_day.map_or(self.created, |first| first.min(self.created))
+        let first_hour = self.hours.keys().next().map(|(hour, _)| *hour);
+        first_hour.map_or(self.created, |first| first.min(self.created))
     }
 
     /// Stores a limit reading unless one from the same moment is already kept.
@@ -192,6 +201,7 @@ impl History {
                 at: r.at,
                 five_hour: r.five_hour,
                 seven_day: r.seven_day,
+                seven_day_resets_at: r.seven_day_resets_at,
             })
             .collect()
     }
@@ -203,7 +213,8 @@ impl History {
             .checked_sub_days(Days::new(USAGE_DAYS))
             .unwrap_or(today);
         let limit_cutoff = now.checked_sub_days(Days::new(LIMIT_DAYS)).unwrap_or(now);
-        self.days.retain(|(day, _), _| *day >= usage_cutoff);
+        self.hours
+            .retain(|(hour, _), _| hour.date_naive() >= usage_cutoff);
         self.seen.retain(|_, day| *day >= usage_cutoff);
         self.limits.retain(|reading| reading.at >= limit_cutoff);
     }

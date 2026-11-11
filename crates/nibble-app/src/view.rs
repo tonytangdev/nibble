@@ -1,5 +1,6 @@
 //! What the popover shows, shaped for the React side (camelCase JSON).
 
+use chrono::{DateTime, Local, Utc};
 use nibble_core::{
     Assessment, CheaperOption, Mood, PlanId, PriceCatalog, Progress, Subscription, Suggestion,
     Wedge,
@@ -13,15 +14,17 @@ pub(crate) struct View {
     pub(crate) status: Status,
     pub(crate) plan: Option<String>,
     pub(crate) value_cents: u64,
-    pub(crate) price_cents: Option<u64>,
+    pub(crate) weekly_share_cents: Option<u64>,
     pub(crate) progress_percent: Option<u64>,
     pub(crate) wedge: Option<&'static str>,
     pub(crate) multiplier: Option<String>,
     pub(crate) lower_bound: bool,
     pub(crate) mood: &'static str,
     pub(crate) suggestion: Option<SuggestionView>,
-    pub(crate) renews_on: Option<String>,
-    pub(crate) days_left: Option<u32>,
+    /// The local date the Week resets, e.g. `Nov 18`.
+    pub(crate) resets_on: Option<String>,
+    /// Whole hours until the Week resets.
+    pub(crate) hours_left: Option<u64>,
     pub(crate) unpriced_responses: u64,
     pub(crate) prompts: Prompts,
     pub(crate) notifications_on: bool,
@@ -32,7 +35,7 @@ pub(crate) struct View {
 #[derive(Debug, Clone, Copy, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Prompts {
-    /// Show the Paid off card: paid off and not yet seen this cycle.
+    /// Show the Paid off card: paid off and not yet seen this Week.
     pub(crate) celebrate: bool,
     /// Ask about starting at login: not yet answered.
     pub(crate) ask_autostart: bool,
@@ -70,26 +73,28 @@ impl View {
     }
 }
 
-/// The popover's view of one Assessment.
+/// The popover's view of one Assessment at `now`.
 pub(crate) fn of(
     assessment: &Assessment,
     subscription: &Subscription,
     catalog: &PriceCatalog,
+    now: DateTime<Utc>,
 ) -> View {
+    let resets_at = assessment.week.resets_at;
     let name = |plan: &PlanId| plan_name(catalog, subscription, plan);
     View {
         status: Status::Ready,
         plan: Some(name(&subscription.plan)),
         value_cents: cents(assessment.value.micros()),
-        price_cents: assessment.price.map(|p| cents(p.micros())),
+        weekly_share_cents: assessment.weekly_share.map(|p| cents(p.micros())),
         progress_percent: assessment.progress.map(|p| p.basis_points() / 100),
         wedge: assessment.wedge.map(wedge_name),
         multiplier: assessment.multiplier.map(multiplier),
         lower_bound: assessment.unpriced_responses > 0,
         mood: mood_name(assessment.mood),
         suggestion: assessment.suggestion.as_ref().map(|s| suggestion(s, name)),
-        renews_on: Some(assessment.cycle.renews_on.format("%b %-d").to_string()),
-        days_left: Some(assessment.cycle.days_left),
+        resets_on: Some(resets_at.with_timezone(&Local).format("%b %-d").to_string()),
+        hours_left: u64::try_from((resets_at - now).num_hours()).ok(),
         unpriced_responses: assessment.unpriced_responses,
         ..View::default()
     }

@@ -2,9 +2,10 @@
 
 use chrono::{DateTime, Days, NaiveDate, Utc};
 
+use crate::week::weekly_share;
 use crate::{
-    BillingCycle, CheaperOption, Dismissal, LimitReading, Mood, PriceCatalog, Progress, SeatKind,
-    Subscription, SubscriptionId, Suggestion, UsageRecord, Usd, Wedge, rules,
+    CheaperOption, Dismissal, LimitReading, Mood, PriceCatalog, Progress, SeatKind, Subscription,
+    SubscriptionId, Suggestion, UsageRecord, Usd, Wedge, Week, rules,
 };
 
 /// Everything `assess` needs, gathered by the adapters.
@@ -31,12 +32,14 @@ pub struct Inputs {
 pub struct Assessment {
     /// Which Subscription.
     pub subscription: SubscriptionId,
-    /// The current Billing cycle.
-    pub cycle: BillingCycle,
-    /// API value of the current Billing cycle's usage.
+    /// The current Week.
+    pub week: Week,
+    /// API value of this Week's usage.
     pub value: Usd,
     /// The Plan price, unless the Plan is unknown and not overridden.
     pub price: Option<Usd>,
+    /// The Plan price's Weekly share, when the price is known.
+    pub weekly_share: Option<Usd>,
     /// Break-even progress, when the price is known.
     pub progress: Option<Progress>,
     /// The menu bar Wedge, when the price is known.
@@ -47,7 +50,7 @@ pub struct Assessment {
     pub mood: Mood,
     /// What nibble recommends, if anything.
     pub suggestion: Option<Suggestion>,
-    /// Responses this cycle from models missing from the Price catalog.
+    /// Responses this Week from models missing from the Price catalog.
     pub unpriced_responses: u64,
 }
 
@@ -60,13 +63,13 @@ pub struct Report {
     pub combined: Combined,
 }
 
-/// Every priced Subscription's API value against their total Plan price.
+/// Every priced Subscription's API value this Week against their total Weekly share.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Combined {
-    /// Total API value this cycle.
+    /// Total API value this Week.
     pub value: Usd,
-    /// Total Plan price.
-    pub price: Usd,
+    /// Total Weekly share.
+    pub weekly_share: Usd,
     /// The menu bar Wedge, when anything is priced.
     pub wedge: Option<Wedge>,
     /// The Multiplier, once the total is Paid off.
@@ -77,13 +80,13 @@ pub struct Combined {
 
 impl Combined {
     fn of(assessments: &[Assessment]) -> Self {
-        let priced = || assessments.iter().filter(|a| a.price.is_some());
+        let priced = || assessments.iter().filter(|a| a.weekly_share.is_some());
         let value = priced().map(|a| a.value).sum();
-        let price = priced().filter_map(|a| a.price).sum();
-        let progress = Progress::of(value, price);
+        let weekly_share = priced().filter_map(|a| a.weekly_share).sum();
+        let progress = Progress::of(value, weekly_share);
         Self {
             value,
-            price,
+            weekly_share,
             wedge: progress.map(Wedge::from),
             multiplier: progress.filter(|p| p.is_paid_off()),
             has_unpriced: priced().any(|a| a.unpriced_responses > 0),
@@ -107,13 +110,13 @@ pub fn assess(inputs: &Inputs) -> Report {
 
 fn assess_one(inputs: &Inputs, sub: &Subscription) -> Assessment {
     let today = inputs.now.date_naive();
-    let cycle = BillingCycle::containing(today, sub.cycle_anchor);
-    let in_cycle =
-        |r: &UsageRecord| r.provider == sub.provider && cycle.contains(r.at.date_naive());
-    let value = value_where(inputs, sub, in_cycle);
+    let week = Week::containing(inputs.now, &inputs.limits, &sub.provider);
+    let in_week = |r: &UsageRecord| r.provider == sub.provider && week.contains(r.at);
+    let value = value_where(inputs, sub, in_week);
     let offer = inputs.catalog.plan(&sub.provider, &sub.plan);
     let price = sub.price_override.or_else(|| offer.map(|o| o.price));
-    let progress = price.and_then(|price| Progress::of(value, price));
+    let share = price.map(weekly_share);
+    let progress = share.and_then(|share| Progress::of(value, share));
 
     // Organization seats get API value only: their pricing and limits work differently.
     let judged = sub.seat == SeatKind::Individual;
@@ -126,13 +129,14 @@ fn assess_one(inputs: &Inputs, sub: &Subscription) -> Assessment {
         });
     let hungry = judged && rules::still_hungry(&inputs.limits, &sub.provider, today);
     let mood = rules::mood(hungry, cheaper.is_some(), progress);
-    let suggestion = suggest(inputs, sub, &cycle, mood, cheaper);
+    let suggestion = suggest(inputs, sub, &week, mood, cheaper);
 
     Assessment {
         subscription: sub.id.clone(),
-        cycle,
+        week,
         value,
         price,
+        weekly_share: share,
         progress,
         wedge: progress.map(Wedge::from),
         multiplier: progress.filter(|p| p.is_paid_off()),
@@ -141,25 +145,25 @@ fn assess_one(inputs: &Inputs, sub: &Subscription) -> Assessment {
         unpriced_responses: inputs
             .usage
             .iter()
-            .filter(|r| in_cycle(r))
+            .filter(|r| in_week(r))
             .filter(|r| inputs.catalog.rates_for(&r.provider, &r.model).is_none())
             .map(|r| r.responses)
             .sum(),
     }
 }
 
-/// The Suggestion for `mood`, unless dismissed this cycle or the seat is an organization's.
+/// The Suggestion for `mood`, unless dismissed this Week or the seat is an organization's.
 fn suggest(
     inputs: &Inputs,
     sub: &Subscription,
-    cycle: &BillingCycle,
+    week: &Week,
     mood: Mood,
     cheaper: Option<CheaperOption>,
 ) -> Option<Suggestion> {
     let dismissed = inputs
         .dismissals
         .iter()
-        .any(|d| d.subscription == sub.id && cycle.contains(d.at.date_naive()));
+        .any(|d| d.subscription == sub.id && week.contains(d.at));
     if dismissed || sub.seat == SeatKind::Organization {
         return None;
     }

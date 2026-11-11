@@ -11,7 +11,7 @@ import nibbling from "../../design/nibble-nibbling.svg";
 import paidOff from "../../design/nibble-paid-off.svg";
 import sleepy from "../../design/nibble-sleepy.svg";
 import stillHungry from "../../design/nibble-still-hungry.svg";
-import { dollars, headline, renewal, suggestionText } from "./copy";
+import { dollars, headline, suggestionText, weeklyReset } from "./copy";
 import { loading, type Mood, type View, type Wedge } from "./view";
 
 const mascots: Record<Mood, string> = { nibbling, paidOff, sleepy, stillHungry };
@@ -78,7 +78,7 @@ function Body({ view }: { view: View }) {
       </p>
     );
   }
-  const reading = renewal(view);
+  const reading = weeklyReset(view);
   return (
     <>
       <h1>{headline(view)}</h1>
@@ -92,8 +92,8 @@ function Body({ view }: { view: View }) {
           />
         )}
         <span className="mono">{dollars(view.valueCents)}</span>
-        {view.priceCents !== null && (
-          <span className="of"> of {dollars(view.priceCents)} at API rates</span>
+        {view.weeklyShareCents !== null && (
+          <span className="of"> of {dollars(view.weeklyShareCents)} this week at API rates</span>
         )}
         {view.multiplier && (
           <span className="multiplier mono">
@@ -132,7 +132,7 @@ function Celebration({ view }: { view: View }) {
       <img className="mascot" src={paidOff} alt="nibble, celebrating" />
       <h1>nibble ate the whole wedge!</h1>
       <p className="lede">
-        {view.plan ?? "Your plan"} has paid for itself this cycle
+        {view.plan ?? "Your plan"} has paid for itself this week
         {view.multiplier ? `, ${view.multiplier} and counting` : ""}.
       </p>
       <button type="button" className="primary" onClick={() => void invoke("celebrated")}>

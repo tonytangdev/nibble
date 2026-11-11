@@ -48,24 +48,6 @@ impl SubscriptionId {
     }
 }
 
-/// The day of the month a Billing cycle starts, 1 to 31.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct CycleAnchor(u8);
-
-impl CycleAnchor {
-    /// A Cycle anchor, or `None` outside 1 to 31.
-    #[must_use]
-    pub fn new(day: u8) -> Option<Self> {
-        (1..=31).contains(&day).then_some(Self(day))
-    }
-
-    /// The day of the month.
-    #[must_use]
-    pub const fn day(self) -> u8 {
-        self.0
-    }
-}
-
 /// Whether a seat is bought by a person or by an organization.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SeatKind {
@@ -86,8 +68,6 @@ pub struct Subscription {
     pub plan: PlanId,
     /// What the user actually pays, when it differs from the list price.
     pub price_override: Option<crate::Usd>,
-    /// The day each Billing cycle starts.
-    pub cycle_anchor: CycleAnchor,
     /// Who bought the seat.
     pub seat: SeatKind,
 }

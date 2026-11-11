@@ -3,25 +3,25 @@
 use std::fs;
 use std::path::Path;
 
-use chrono::{DateTime, NaiveDate, Utc};
-use nibble_core::{CycleAnchor, Dismissal, PlanId, Subscription, SubscriptionId, Usd};
+use chrono::{DateTime, Utc};
+use nibble_core::{Dismissal, PlanId, Subscription, SubscriptionId, Usd};
 use serde::{Deserialize, Serialize};
 
-/// What the user chose, plus which once-per-cycle moments already happened.
+/// What the user chose, plus which once-a-Week moments already happened.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub(crate) struct Settings {
     /// Suggestions dismissed with "Not now".
     pub(crate) dismissals: Vec<StoredDismissal>,
-    /// The cycle whose Paid off notification was sent.
-    pub(crate) notified_cycle: Option<NaiveDate>,
-    /// The cycle whose Paid off card was seen.
-    pub(crate) celebrated_cycle: Option<NaiveDate>,
+    /// The start of the Week whose Paid off notification was sent.
+    pub(crate) notified_week: Option<DateTime<Utc>>,
+    /// The start of the Week whose Paid off card was seen.
+    pub(crate) celebrated_week: Option<DateTime<Utc>>,
     /// Whether the start-at-login question was answered.
     pub(crate) autostart_asked: bool,
     /// Whether the Paid off notification is off.
     pub(crate) notifications_off: bool,
-    /// Plan, price and Cycle anchor the user set by hand.
+    /// Plan and price the user set by hand.
     pub(crate) overrides: Overrides,
 }
 
@@ -31,7 +31,6 @@ pub(crate) struct Settings {
 pub(crate) struct Overrides {
     pub(crate) plan: Option<String>,
     pub(crate) price_cents: Option<u64>,
-    pub(crate) cycle_anchor: Option<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -75,9 +74,6 @@ impl Settings {
         }
         if let Some(cents) = self.overrides.price_cents {
             detected.price_override = Some(Usd::from_cents(cents));
-        }
-        if let Some(anchor) = self.overrides.cycle_anchor.and_then(CycleAnchor::new) {
-            detected.cycle_anchor = anchor;
         }
         detected
     }

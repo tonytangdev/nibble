@@ -59,7 +59,11 @@ impl Home {
 }
 
 fn at(y: i32, m: u32, d: u32, h: u32) -> DateTime<Utc> {
-    Utc.with_ymd_and_hms(y, m, d, h, 0, 0).unwrap()
+    at_minute(y, m, d, h, 0)
+}
+
+fn at_minute(y: i32, m: u32, d: u32, h: u32, min: u32) -> DateTime<Utc> {
+    Utc.with_ymd_and_hms(y, m, d, h, min, 0).unwrap()
 }
 
 /// One assistant line as Claude Code logs it.
@@ -87,14 +91,14 @@ fn refresh(home: &Home, now: DateTime<Utc>) -> ProviderSnapshot {
     home.adapter().refresh(now).unwrap()
 }
 
-/// (day, model, responses, tokens) for each record, sorted.
+/// (hour, model, responses, tokens) for each record, sorted.
 fn totals(snapshot: &ProviderSnapshot) -> Vec<(String, String, u64, TokenCounts)> {
     let mut out: Vec<_> = snapshot
         .usage
         .iter()
         .map(|r| {
             (
-                r.at.date_naive().to_string(),
+                r.at.format("%Y-%m-%d %H:%M").to_string(),
                 r.model.clone(),
                 r.responses,
                 r.tokens,
@@ -116,7 +120,7 @@ fn tokens(input: u64, output: u64, responses: u64) -> TokenCounts {
 }
 
 #[test]
-fn sums_assistant_usage_per_day_and_model_across_nested_logs() {
+fn sums_assistant_usage_per_hour_and_model_across_nested_logs() {
     let home = Home::new();
     home.append(
         "-Users-me-proj/session-a.jsonl",
@@ -124,8 +128,15 @@ fn sums_assistant_usage_per_day_and_model_across_nested_logs() {
             json!({"type": "user", "message": {"content": "hi"}}).to_string(),
             assistant("1", "claude-opus-5-5", at(2026, 11, 10, 9), 5, 50),
             "{not json".into(),
-            assistant("2", "claude-opus-5-5", at(2026, 11, 10, 22), 7, 70),
+            assistant(
+                "2",
+                "claude-opus-5-5",
+                at_minute(2026, 11, 10, 9, 59),
+                7,
+                70,
+            ),
             assistant("3", "<synthetic>", at(2026, 11, 10, 23), 0, 0),
+            assistant("5", "claude-opus-5-5", at(2026, 11, 10, 10), 1, 10),
         ],
     );
     home.append(
@@ -145,13 +156,19 @@ fn sums_assistant_usage_per_day_and_model_across_nested_logs() {
         totals(&snapshot),
         vec![
             (
-                "2026-11-10".into(),
+                "2026-11-10 09:00".into(),
                 "claude-opus-5-5".into(),
                 2,
                 tokens(12, 120, 2)
             ),
             (
-                "2026-11-11".into(),
+                "2026-11-10 10:00".into(),
+                "claude-opus-5-5".into(),
+                1,
+                tokens(1, 10, 1)
+            ),
+            (
+                "2026-11-11 01:00".into(),
                 "claude-haiku-5-5".into(),
                 1,
                 tokens(3, 30, 1)
@@ -173,7 +190,7 @@ fn a_response_logged_several_times_counts_once() {
     assert_eq!(
         totals(&snapshot),
         vec![(
-            "2026-11-10".into(),
+            "2026-11-10 09:00".into(),
             "claude-opus-5-5".into(),
             1,
             tokens(5, 50, 1)
@@ -196,7 +213,7 @@ fn usage_survives_claude_code_pruning_its_logs() {
     assert_eq!(
         totals(&snapshot),
         vec![(
-            "2026-10-01".into(),
+            "2026-10-01 09:00".into(),
             "claude-opus-5-5".into(),
             1,
             tokens(5, 50, 1)
@@ -216,7 +233,7 @@ fn each_refresh_adds_only_what_is_new() {
         &[assistant(
             "2",
             "claude-opus-5-5",
-            at(2026, 11, 10, 13),
+            at_minute(2026, 11, 10, 9, 30),
             1,
             10,
         )],
@@ -228,7 +245,7 @@ fn each_refresh_adds_only_what_is_new() {
     assert_eq!(
         totals(&snapshot),
         vec![(
-            "2026-11-10".into(),
+            "2026-11-10 09:00".into(),
             "claude-opus-5-5".into(),
             2,
             tokens(6, 60, 2)
@@ -267,14 +284,13 @@ fn signed_in(org_type: &str, tier: &str) -> serde_json::Value {
 }
 
 #[test]
-fn detects_the_plan_and_cycle_anchor_from_the_account() {
+fn detects_the_plan_from_the_account() {
     let home = Home::new();
     write_config(&home, &signed_in("claude_max", "default_claude_max_5x"));
 
     let sub = refresh(&home, at(2026, 11, 11, 12)).subscription.unwrap();
 
     assert_eq!(sub.plan, PlanId::new("max_5x"));
-    assert_eq!(sub.cycle_anchor.day(), 24);
     assert_eq!(sub.seat, SeatKind::Individual);
     assert_eq!(sub.provider, ProviderId::new(CLAUDE_PROVIDER));
 }
@@ -316,14 +332,14 @@ fn with_utilization(fetched: DateTime<Utc>, five_hour: u16, seven_day: u16) -> s
         "fetchedAtMs": fetched.timestamp_millis(),
         "utilization": {
             "five_hour": { "utilization": five_hour, "resets_at": "2026-11-11T11:59:59Z" },
-            "seven_day": { "utilization": seven_day, "resets_at": "2026-11-18T09:59:59Z" }
+            "seven_day": { "utilization": seven_day, "resets_at": "2026-11-18T10:00:00.052966+00:00" }
         }
     });
     config
 }
 
 #[test]
-fn keeps_each_new_utilization_reading_once() {
+fn keeps_each_new_utilization_reading_once_with_its_weekly_reset_to_the_minute() {
     let home = Home::new();
     write_config(&home, &with_utilization(at(2026, 11, 10, 9), 40, 10));
     refresh(&home, at(2026, 11, 10, 10));
@@ -334,13 +350,14 @@ fn keeps_each_new_utilization_reading_once() {
 
     let seen: Vec<_> = limits
         .iter()
-        .map(|r| (r.at, r.five_hour, r.seven_day))
+        .map(|r| (r.at, r.five_hour, r.seven_day, r.seven_day_resets_at))
         .collect();
+    let reset = Some(at(2026, 11, 18, 10));
     assert_eq!(
         seen,
         vec![
-            (at(2026, 11, 10, 9), Some(40), Some(10)),
-            (at(2026, 11, 11, 9), Some(95), Some(20))
+            (at(2026, 11, 10, 9), Some(40), Some(10), reset),
+            (at(2026, 11, 11, 9), Some(95), Some(20), reset)
         ]
     );
 }
@@ -377,7 +394,7 @@ fn history_keeps_thirteen_weeks_of_usage_and_a_month_of_readings() {
     assert_eq!(
         totals(&snapshot),
         vec![(
-            "2026-08-20".into(),
+            "2026-08-20 09:00".into(),
             "claude-opus-5-5".into(),
             1,
             tokens(1, 10, 1)
@@ -411,6 +428,39 @@ fn a_corrupt_history_is_rebuilt_from_the_logs() {
 }
 
 #[test]
+fn a_history_of_daily_totals_carries_over_as_midnight_hours() {
+    let home = Home::new();
+    let daily = json!({
+        "version": 1,
+        "created": "2026-09-01T08:00:00Z",
+        "days": [["2026-10-01", "claude-opus-5-5", {
+            "responses": 1, "input": 5, "output": 50,
+            "cache_read": 100, "cache_write_5m": 10, "cache_write_1h": 20
+        }]],
+        "seen": [],
+        "bookmarks": {},
+        "limits": [{ "at": "2026-11-01T09:00:00Z", "five_hour": 40, "seven_day": 10 }]
+    });
+    fs::create_dir_all(home.cache().parent().unwrap()).unwrap();
+    fs::write(home.cache(), daily.to_string()).unwrap();
+
+    let snapshot = refresh(&home, at(2026, 11, 11, 12));
+
+    assert_eq!(
+        totals(&snapshot),
+        vec![(
+            "2026-10-01 00:00".into(),
+            "claude-opus-5-5".into(),
+            1,
+            tokens(5, 50, 1)
+        )]
+    );
+    assert_eq!(snapshot.limits.len(), 1);
+    assert_eq!(snapshot.limits[0].seven_day_resets_at, None);
+    assert_eq!(snapshot.history_start, at(2026, 9, 1, 8));
+}
+
+#[test]
 fn history_starts_at_the_first_usage_or_when_nibble_first_ran() {
     let fresh = Home::new();
     assert_eq!(
@@ -431,7 +481,7 @@ fn history_starts_at_the_first_usage_or_when_nibble_first_ran() {
     );
     assert_eq!(
         refresh(&with_logs, at(2026, 11, 11, 12)).history_start,
-        at(2026, 10, 15, 0)
+        at(2026, 10, 15, 9)
     );
 }
 

@@ -19,14 +19,14 @@ pub struct TokenCounts {
     pub cache_write_1h: u64,
 }
 
-/// Token counts for one model, from one response or a day's worth of them.
+/// Token counts for one model, from one response or an hour's worth of them.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UsageRecord {
     /// Who served the responses.
     pub provider: ProviderId,
     /// The model identifier as logged.
     pub model: String,
-    /// When the responses happened (the day's start for daily totals).
+    /// When the responses happened (the hour's start for hourly totals).
     pub at: DateTime<Utc>,
     /// How many responses the counts cover.
     pub responses: u64,
@@ -45,9 +45,11 @@ pub struct LimitReading {
     pub five_hour: Option<u16>,
     /// Utilization of the 7-day window, if known.
     pub seven_day: Option<u16>,
+    /// When the 7-day window next resets, if known.
+    pub seven_day_resets_at: Option<DateTime<Utc>>,
 }
 
-/// The user's "not now" on a Subscription's Suggestion, lasting until the next Billing cycle.
+/// The user's "not now" on a Subscription's Suggestion, lasting until the next Week.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Dismissal {
     /// Which Subscription.

@@ -3,8 +3,8 @@
 //! Both are undocumented (ADR-0003), so this reads loosely: any unexpected shape
 //! means "unknown", never an error.
 
-use chrono::{DateTime, Datelike, Utc};
-use nibble_core::{CycleAnchor, PlanId, ProviderId, SeatKind, Subscription, SubscriptionId};
+use chrono::{DateTime, DurationRound, TimeDelta, Utc};
+use nibble_core::{PlanId, ProviderId, SeatKind, Subscription, SubscriptionId};
 use serde_json::Value;
 
 use super::PROVIDER;
@@ -24,18 +24,12 @@ pub(crate) fn subscription(config: &Value, provider: &ProviderId) -> Option<Subs
     } else {
         SeatKind::Individual
     };
-    let anchor = text("subscriptionCreatedAt")
-        .and_then(|created| created.parse::<DateTime<Utc>>().ok())
-        .and_then(|created| u8::try_from(created.day()).ok())
-        .and_then(CycleAnchor::new)
-        .or_else(|| CycleAnchor::new(1))?;
     let account_id = text("accountUuid").unwrap_or("default");
     Some(Subscription {
         id: SubscriptionId::new(format!("{PROVIDER}:{account_id}")),
         provider: provider.clone(),
         plan: PlanId::new(plan),
         price_override: None,
-        cycle_anchor: anchor,
         seat,
     })
 }
@@ -52,10 +46,22 @@ pub(crate) fn utilization(config: &Value) -> Option<StoredReading> {
             .as_u64()
             .and_then(|value| u16::try_from(value).ok())
     };
+    // Rounded to the minute: the cache reports resets a few milliseconds past the hour.
+    let seven_day_resets_at = windows
+        .get("seven_day")
+        .and_then(|window| {
+            window
+                .get("resets_at")?
+                .as_str()?
+                .parse::<DateTime<Utc>>()
+                .ok()
+        })
+        .and_then(|resets_at| resets_at.duration_round(TimeDelta::minutes(1)).ok());
     let reading = StoredReading {
         at,
         five_hour: percent("five_hour"),
         seven_day: percent("seven_day"),
+        seven_day_resets_at,
     };
     (reading.five_hour.is_some() || reading.seven_day.is_some()).then_some(reading)
 }
