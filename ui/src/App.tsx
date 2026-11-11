@@ -319,7 +319,7 @@ function Settings({ view, onClose }: { view: View; onClose: () => void }) {
         />
         <Switch
           label="Check for updates"
-          hint="Once a day, nibble asks GitHub for a new version."
+          hint="Once a day, nibble asks GitHub for a new version and tells you when one is out."
           on={updateChecks}
           onChange={(on) => {
             setUpdateChecks(on);

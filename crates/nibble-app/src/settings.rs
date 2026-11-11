@@ -23,6 +23,8 @@ pub(crate) struct Settings {
     pub(crate) notifications_off: bool,
     /// Whether nibble no longer looks for new versions.
     pub(crate) update_checks_off: bool,
+    /// The newest version a notification already announced.
+    pub(crate) announced_version: Option<String>,
     /// Plan and price the user set by hand.
     pub(crate) overrides: Overrides,
 }

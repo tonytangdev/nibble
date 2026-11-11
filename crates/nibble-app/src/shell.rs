@@ -96,6 +96,13 @@ pub(crate) fn run() -> tauri::Result<()> {
             let handle = app.handle().clone();
             app.manage(AppState(Mutex::new(new_shell(&handle)?)));
             tray::build(&handle)?;
+            // A click on any of nibble's notifications opens the popover.
+            let opener = handle.clone();
+            app.notification().on_action(move |action| {
+                if action.action_id() == "tap" {
+                    tray::open_popover(&opener);
+                }
+            })?;
             let refresher = handle.clone();
             thread::spawn(move || {
                 loop {
@@ -279,9 +286,29 @@ fn check_for_update<R: Runtime>(app: &AppHandle<R>) {
     if shell.pending.as_ref().is_some_and(Pending::installing) {
         return;
     }
+    if let Some(update) = &found {
+        notify_update(app, &mut shell, &update.version);
+    }
     shell.pending = found.map(Pending::found);
     drop(shell);
     refresh_soon(app);
+}
+
+/// Sends the update notification once per version.
+fn notify_update<R: Runtime>(app: &AppHandle<R>, shell: &mut Shell, version: &str) {
+    if !updates::announce(version, shell.settings.announced_version.as_deref()) {
+        return;
+    }
+    let _shown = app
+        .notification()
+        .builder()
+        .title("nibble grew a new tooth")
+        .body(format!(
+            "Version {version} is ready to install. Click to open nibble."
+        ))
+        .show();
+    shell.settings.announced_version = Some(version.to_owned());
+    save(shell);
 }
 
 /// Downloads and installs the update found, then restarts into it.
