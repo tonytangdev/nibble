@@ -22,7 +22,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ fromJSON(inputs.macos-only && '["macos-latest"]' || '["macos-latest", "windows-latest", "ubuntu-latest"]') }}
+        # Runner images are pinned, so an OS upgrade is a change we make, not one that happens to us.
+        # These were what `*-latest` meant on 2026-11-11 (https://github.com/actions/runner-images).
+        os: ${{ fromJSON(inputs.macos-only && '["macos-26"]' || '["macos-26", "windows-2025", "ubuntu-24.04"]') }}
     runs-on: ${{ matrix.os }}
     # A normal run takes under 5 minutes; a stuck runner fails here instead of hanging for hours.
     timeout-minutes: 20
@@ -49,7 +51,7 @@ jobs:
       - run: pnpm site:build
 
   deny:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
