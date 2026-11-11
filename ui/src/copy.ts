@@ -35,14 +35,38 @@ export function suggestionText(suggestion: Suggestion, plan: string): string {
   }
 }
 
+/** How far along the Week is toward paying for itself, e.g. `68% paid off`, then `Paid off`. */
+export function progressText(view: View): string | null {
+  if (view.progressPercent === null) return null;
+  return view.multiplier === null ? `${String(view.progressPercent)}% paid off` : "Paid off";
+}
+
 export function weeklyReset(view: View): string | null {
   if (view.hoursLeft === null || view.resetsOn === null) return null;
-  return `Resets ${view.resetsOn}, in ${timeLeft(view.hoursLeft)}`;
+  return `Resets ${view.resetsOn} · ${timeLeft(view.hoursLeft)}`;
+}
+
+/** What to say while there is nothing to assess. */
+export function waiting(status: View["status"]): { title: string; body: string } {
+  switch (status) {
+    case "signedOut":
+      return {
+        title: "No Claude account yet",
+        body: "Sign in to Claude Code and nibble will start counting.",
+      };
+    case "noUsage":
+      return {
+        title: "Nothing to nibble yet",
+        body: "Use Claude Code and nibble will start eating through your plan.",
+      };
+    default:
+      return { title: "Counting crumbs…", body: "nibble is reading Claude Code’s logs." };
+  }
 }
 
 function timeLeft(hours: number): string {
-  if (hours < 1) return "under an hour";
-  if (hours < 24) return hours === 1 ? "1 hour" : `${String(hours)} hours`;
+  if (hours < 1) return "under an hour left";
+  if (hours < 24) return hours === 1 ? "1 hour left" : `${String(hours)} hours left`;
   const days = Math.floor(hours / 24);
-  return days === 1 ? "1 day" : `${String(days)} days`;
+  return days === 1 ? "1 day left" : `${String(days)} days left`;
 }

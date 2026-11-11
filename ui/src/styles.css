@@ -4,13 +4,52 @@
   --teal-deep: oklch(0.34 0.08 202);
   --cream: oklch(0.96 0.025 95);
   --ink: oklch(0.17 0.022 200);
-  --ink-soft: oklch(0.17 0.022 200 / 0.62);
-  --line: oklch(0.17 0.022 200 / 0.12);
+  --cheese: oklch(0.86 0.16 92);
+  --cheese-hole: oklch(0.72 0.15 82);
   --display: "Bricolage Grotesque Variable", system-ui, sans-serif;
   --body: "Public Sans Variable", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
-  color: var(--ink);
+
+  /* What the popover is painted with; the dark scheme swaps these and nothing else. */
+  --surface: var(--cream);
+  --text: var(--ink);
+  --soft: oklch(0.17 0.022 200 / 0.64);
+  --line: oklch(0.17 0.022 200 / 0.12);
+  --track: oklch(0.17 0.022 200 / 0.22);
+  --wash: oklch(0.42 0.085 197 / 0.1);
+  --raised: oklch(1 0 0 / 0.55);
+  --accent: var(--teal);
+  --accent-strong: var(--teal-deep);
+  --on-accent: var(--cream);
+  --stage: oklch(0.925 0.04 95);
+  --stage-sleepy: oklch(0.915 0.03 215);
+  --stage-hungry: oklch(0.925 0.035 40);
+  --stage-paid: oklch(0.9 0.045 190);
+  --warn: oklch(0.5 0.15 30);
+
+  color-scheme: light dark;
+  color: var(--text);
   font: 14px/1.45 var(--body);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: oklch(0.215 0.02 200);
+    --text: var(--cream);
+    --soft: oklch(0.96 0.025 95 / 0.64);
+    --line: oklch(0.96 0.025 95 / 0.13);
+    --track: oklch(0.96 0.025 95 / 0.22);
+    --wash: oklch(0.68 0.095 195 / 0.14);
+    --raised: oklch(0.96 0.025 95 / 0.06);
+    --accent: oklch(0.68 0.095 195);
+    --accent-strong: oklch(0.8 0.08 195);
+    --on-accent: var(--ink);
+    --stage: oklch(0.3 0.03 200);
+    --stage-sleepy: oklch(0.29 0.04 235);
+    --stage-hungry: oklch(0.31 0.035 40);
+    --stage-paid: oklch(0.34 0.055 195);
+    --warn: oklch(0.76 0.13 35);
+  }
 }
 
 html,
@@ -22,215 +61,513 @@ body {
   cursor: default;
 }
 
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+button {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .card {
   box-sizing: border-box;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 18px 20px 14px;
-  background: var(--cream);
+  background: var(--surface);
   border-radius: 14px;
   border: 1px solid var(--line);
   overflow: hidden;
 }
 
+/* The stage: nibble on a soft floor, tinted by Mood. It takes whatever height the words
+   below leave, so the card never has a hole in it and never overflows. */
+.stage {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 92px;
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 12px;
+  background: var(--stage);
+  transition: background-color 400ms ease;
+}
+
+.mood-sleepy > .stage {
+  background: var(--stage-sleepy);
+}
+
+.mood-stillHungry > .stage {
+  background: var(--stage-hungry);
+}
+
+.mood-paidOff > .stage {
+  background: var(--stage-paid);
+}
+
 .mascot {
-  height: 132px;
+  position: relative;
   align-self: center;
+  height: 100%;
+  max-height: 184px;
+  min-height: 0;
   animation: arrive 360ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+/* The floor under nibble's feet. */
+.stage .mascot::before {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  left: 45%;
+  width: 78%;
+  height: 12px;
+  translate: -50%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, oklch(0.17 0.022 200 / 0.18), transparent);
+}
+
 .mascot svg {
+  position: relative;
   display: block;
   height: 100%;
   width: auto;
   overflow: visible;
 }
 
-h1 {
-  margin: 0;
-  font: 600 20px/1.2 var(--display);
+/* The parts drawn in ink or teal on bare stage follow the scheme, so they survive the dark. */
+.stage .nb-z {
+  fill: var(--text);
 }
 
-.mono {
-  font-family: var(--mono);
-  font-weight: 500;
+.stage .nb-tail {
+  stroke: var(--accent);
+}
+
+.chip {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  padding: 2px 9px;
+  font: 500 11px/1.6 var(--mono);
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--soft);
+  transition:
+    background-color 120ms,
+    color 120ms;
+}
+
+.icon:hover {
+  color: var(--text);
+  background: var(--line);
+}
+
+.stage .icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px 0;
+}
+
+h1 {
+  font: 600 19px/1.2 var(--display);
+  letter-spacing: -0.01em;
 }
 
 .lede {
-  margin: 0;
-  color: var(--ink-soft);
+  color: var(--soft);
 }
 
-/* The wedge beside two lines: what this week is worth, and what it is measured against. */
-.amount {
+/* The reading: a small label, the big figure, the cheese, then the fine print. */
+.reading {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 7px;
 }
 
-.figures {
-  min-width: 0;
+.label,
+.about h2 {
+  font: 500 10.5px/1.4 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--soft);
+}
+
+.figure {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 .value {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: 24px;
-  line-height: 1.15;
-  white-space: nowrap;
+  font: 700 38px/1 var(--display);
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
 }
 
-.amount .of {
-  margin: 2px 0 0;
-  font-size: 12.5px;
-  color: var(--ink-soft);
-  white-space: nowrap;
-}
-
-.wedge {
-  flex: none;
-  width: 34px;
-  height: 34px;
-  background: var(--teal);
-  animation: bite 520ms ease-out both;
-  /* WKWebView still needs the prefixed mask properties. */
-  -webkit-mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-size: contain;
-  mask-repeat: no-repeat;
+.share {
+  font-size: 13.5px;
+  color: var(--soft);
 }
 
 .multiplier {
-  padding: 1px 7px;
-  font-size: 13px;
+  margin-left: auto;
+  align-self: center;
+  padding: 2px 10px;
+  font: 600 13px/1.6 var(--mono);
   border-radius: 999px;
-  border: 1.5px solid var(--teal);
-  color: var(--teal-deep);
+  color: var(--on-accent);
+  background: var(--accent);
 }
 
-.bar {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--line);
+/* Break-even progress as cheese: nibble eats in from the left, leaving bite marks. */
+.cheese {
+  position: relative;
+  height: 16px;
+  border-radius: 8px;
   overflow: hidden;
+  background:
+    radial-gradient(circle at calc(100% - 14px) 5px, var(--cheese-hole) 2.6px, transparent 3.1px),
+    radial-gradient(circle at calc(100% - 33px) 11px, var(--cheese-hole) 2px, transparent 2.5px),
+    radial-gradient(circle at calc(100% - 58px) 6px, var(--cheese-hole) 3px, transparent 3.5px),
+    radial-gradient(circle at calc(100% - 84px) 12px, var(--cheese-hole) 1.8px, transparent 2.3px),
+    radial-gradient(circle at calc(100% - 112px) 5px, var(--cheese-hole) 2.4px, transparent 2.9px),
+    radial-gradient(circle at calc(100% - 141px) 10px, var(--cheese-hole) 2.8px, transparent 3.3px),
+    radial-gradient(circle at calc(100% - 172px) 6px, var(--cheese-hole) 2px, transparent 2.5px),
+    radial-gradient(circle at calc(100% - 204px) 11px, var(--cheese-hole) 2.6px, transparent 3.1px),
+    radial-gradient(circle at calc(100% - 240px) 5px, var(--cheese-hole) 2.2px, transparent 2.7px),
+    radial-gradient(circle at calc(100% - 272px) 10px, var(--cheese-hole) 2.6px, transparent 3.1px),
+    var(--cheese);
 }
 
-.bar > div {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--teal);
-  transform-origin: left;
-  animation: fill 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+.cheese .eaten {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--eaten);
+  background: var(--accent);
+  animation: eat 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Three bites out of the cheese's edge. */
+.cheese .eaten::after {
+  content: "";
+  position: absolute;
+  inset: 0 -5px 0 auto;
+  width: 10px;
+  background:
+    radial-gradient(circle at 5px 2.5px, var(--accent) 4px, transparent 4.5px),
+    radial-gradient(circle at 4px 8.5px, var(--accent) 4.6px, transparent 5.1px),
+    radial-gradient(circle at 5px 14px, var(--accent) 3.6px, transparent 4.1px);
+}
+
+.cheese.gone .eaten::after,
+.cheese .eaten[style*=" 0%"]::after {
+  content: none;
+}
+
+/* Where break-even fell, once the Week is worth more than its share. */
+.cheese .tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  translate: -1px;
+  background: var(--surface);
 }
 
 .meta {
-  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font: 500 11px/1.4 var(--mono);
+  color: var(--soft);
+  white-space: nowrap;
+}
+
+.note {
   font-size: 12px;
-  color: var(--ink-soft);
+  color: var(--soft);
 }
 
 .error {
-  color: oklch(0.5 0.15 30);
+  color: var(--warn);
 }
 
-.suggestion {
+/* A Suggestion, or a one-off question: set apart, never louder than the reading. */
+.callout {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 10px 12px;
-  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  border-radius: 12px;
   border: 1px solid var(--line);
-  background: oklch(1 0 0 / 0.5);
+  background: var(--raised);
 }
 
-.suggestion p {
-  margin: 0;
-}
-
-button {
-  align-self: flex-start;
-  padding: 4px 12px;
-  font: 500 13px var(--body);
-  color: var(--teal-deep);
-  background: none;
-  border: 1.5px solid var(--teal);
-  border-radius: 999px;
-}
-
-button:hover {
-  background: oklch(0.42 0.085 197 / 0.08);
-}
-
-.check {
+.actions {
   display: flex;
-  align-items: center;
   gap: 6px;
 }
 
-input[type="checkbox"] {
-  accent-color: var(--teal);
+.callout button,
+.celebrate button {
+  align-self: flex-start;
+  padding: 3px 12px;
+  font: 500 12.5px/1.5 var(--body);
+  color: var(--accent-strong);
+  border: 1.5px solid var(--accent);
+  border-radius: 999px;
+  transition: background-color 120ms;
+}
+
+.callout button:hover {
+  background: var(--wash);
+}
+
+.callout button.primary {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.callout button.primary:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
 }
 
 footer {
-  margin-top: auto;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  row-gap: 6px;
-  padding-top: 10px;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 9px 18px 11px;
   border-top: 1px solid var(--line);
-  font-size: 12px;
-  color: var(--ink-soft);
+  font-size: 11.5px;
+}
+
+footer a,
+.quit {
+  color: var(--soft);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+footer a:hover,
+.quit:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+
+.quit {
+  margin-left: auto;
+}
+
+/* Settings: the things you set once, kept off the reading. */
+.settings .bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 10px 6px;
+}
+
+.settings h1 {
+  font-size: 16px;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin: 4px 12px 0;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--raised);
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.switch + .switch {
+  border-top: 1px solid var(--line);
+}
+
+.switch .text {
+  flex: 1;
+  font-size: 13.5px;
+}
+
+.switch small {
+  display: block;
+  font-size: 11.5px;
+  color: var(--soft);
+}
+
+.switch .track {
+  flex: none;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--track);
+  transition: background-color 160ms;
+}
+
+.switch .track::after {
+  content: "";
+  display: block;
+  width: 16px;
+  height: 16px;
+  margin: 2px;
+  border-radius: 50%;
+  background: var(--cream);
+  box-shadow: 0 1px 2px oklch(0.17 0.022 200 / 0.3);
+  transition: translate 160ms cubic-bezier(0.3, 1.4, 0.6, 1);
+}
+
+.switch[aria-checked="true"] .track {
+  background: var(--accent);
+}
+
+.switch[aria-checked="true"] .track::after {
+  translate: 14px;
+}
+
+.about {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 16px 24px 0;
+}
+
+.about p {
+  font-size: 12.5px;
+  color: var(--soft);
+}
+
+.settings footer {
+  margin-top: auto;
 }
 
 /* The break-even moment: the only place the full teal background appears. */
 .celebrate {
-  background: var(--teal);
-  color: var(--cream);
+  position: relative;
+  align-items: center;
   justify-content: center;
+  gap: 10px;
+  padding: 0 24px;
   text-align: center;
+  color: var(--cream);
+  background: var(--teal);
+}
+
+.celebrate > :not(.crumbs) {
+  position: relative;
+  z-index: 1;
+}
+
+.celebrate .mascot {
+  height: 184px;
+}
+
+.celebrate h1 {
+  font-size: 22px;
 }
 
 .celebrate .lede {
-  color: oklch(0.96 0.025 95 / 0.8);
+  color: oklch(0.96 0.025 95 / 0.82);
 }
 
-.celebrate .primary {
+.celebrate button {
   align-self: center;
+  margin-top: 6px;
+  padding: 5px 22px;
+  font-size: 14px;
   color: var(--teal-deep);
   background: var(--cream);
   border-color: var(--cream);
 }
 
+.celebrate button:hover {
+  background: oklch(1 0 0);
+}
+
+/* Crumbs of cheese raining down behind nibble. */
+.crumbs {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.crumbs i {
+  position: absolute;
+  top: -10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 1.5px;
+  background: var(--cheese);
+  animation: fall 3s linear infinite both;
+}
+
+.crumbs i:nth-child(3n) {
+  width: 4px;
+  height: 4px;
+}
+
+@keyframes fall {
+  from {
+    transform: translateY(0) rotate(0deg);
+  }
+  to {
+    transform: translateY(500px) rotate(300deg);
+  }
+}
+
 /* Motion. Popover pieces replay on every open; nibble keeps moving while it is shown. */
+@keyframes eat {
+  from {
+    width: 0;
+  }
+}
+
 @keyframes arrive {
   from {
     opacity: 0;
     transform: translateY(6px) scale(0.94);
-  }
-}
-
-@keyframes bite {
-  0% {
-    transform: scale(0.6) rotate(-12deg);
-    opacity: 0;
-  }
-  45% {
-    transform: scale(1.12) rotate(6deg);
-    opacity: 1;
-  }
-  70% {
-    transform: scale(0.94) rotate(-3deg);
-  }
-}
-
-@keyframes fill {
-  from {
-    transform: scaleX(0);
   }
 }
 
@@ -490,25 +827,12 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   .mascot,
   .mascot *,
-  .wedge,
-  .bar > div {
+  .cheese .eaten,
+  .crumbs i {
     animation: none !important;
   }
-}
 
-.support {
-  flex-basis: 100%;
-  display: flex;
-  gap: 6px;
-  font-size: 11px;
-}
-
-.support a {
-  color: var(--teal-deep);
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.support a:hover {
-  text-decoration: underline;
+  .crumbs {
+    display: none;
+  }
 }

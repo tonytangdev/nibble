@@ -9,7 +9,7 @@ use chrono::{DateTime, Utc};
 use nibble_adapters::{ClaudeCode, JsonCatalog};
 use nibble_core::{CatalogSource, Combined, Inputs, ProviderSource, SourceError, assess};
 use tauri::{AppHandle, Emitter, Manager, Runtime, State, WindowEvent};
-use tauri_plugin_autostart::MacosLauncher;
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_notification::NotificationExt;
 
 use crate::settings::{Settings, StoredDismissal};
@@ -69,7 +69,8 @@ pub(crate) fn run() -> tauri::Result<()> {
             commands::dismiss,
             commands::celebrated,
             commands::answer_autostart,
-            commands::set_notifications
+            commands::set_notifications,
+            commands::quit
         ])
         .run(tauri::generate_context!())
 }
@@ -110,7 +111,7 @@ fn refresh<R: Runtime>(app: &AppHandle<R>) {
     let Ok(mut shell) = state.0.lock() else {
         return;
     };
-    let view = match reassess(&mut shell) {
+    let mut view = match reassess(&mut shell) {
         Ok((view, combined)) => {
             let _drawn = combined.map(|combined| tray::show(app, &combined));
             notify_paid_off(app, &mut shell, &view);
@@ -121,6 +122,8 @@ fn refresh<R: Runtime>(app: &AppHandle<R>) {
             ..shell.view.clone()
         },
     };
+    view.notifications_on = !shell.settings.notifications_off;
+    view.autostart_on = app.autolaunch().is_enabled().unwrap_or(false);
     shell.view = view.clone();
     drop(shell);
     let _sent = app.emit(VIEW_EVENT, view);
@@ -157,7 +160,6 @@ fn reassess(shell: &mut Shell) -> Result<(View, Option<Combined>), SourceError> 
         celebrate: assessment.multiplier.is_some() && shell.settings.celebrated_week != shell.week,
         ask_autostart: !shell.settings.autostart_asked,
     };
-    view.notifications_on = !shell.settings.notifications_off;
     Ok((view, Some(report.combined)))
 }
 
@@ -264,5 +266,10 @@ mod commands {
         update(&app, &state, |shell| {
             shell.settings.notifications_off = !on;
         });
+    }
+
+    #[tauri::command]
+    pub(super) fn quit<R: Runtime>(app: AppHandle<R>) {
+        app.exit(0);
     }
 }

@@ -3,7 +3,6 @@
 use chrono::{DateTime, Local, Utc};
 use nibble_core::{
     Assessment, CheaperOption, Mood, PlanId, PriceCatalog, Progress, Subscription, Suggestion,
-    Wedge,
 };
 use serde::Serialize;
 
@@ -16,7 +15,6 @@ pub(crate) struct View {
     pub(crate) value_cents: u64,
     pub(crate) weekly_share_cents: Option<u64>,
     pub(crate) progress_percent: Option<u64>,
-    pub(crate) wedge: Option<&'static str>,
     pub(crate) multiplier: Option<String>,
     pub(crate) lower_bound: bool,
     pub(crate) mood: &'static str,
@@ -28,6 +26,8 @@ pub(crate) struct View {
     pub(crate) unpriced_responses: u64,
     pub(crate) prompts: Prompts,
     pub(crate) notifications_on: bool,
+    /// Whether nibble starts when the user logs in.
+    pub(crate) autostart_on: bool,
     pub(crate) error: Option<String>,
 }
 
@@ -88,7 +88,6 @@ pub(crate) fn of(
         value_cents: cents(assessment.value.micros()),
         weekly_share_cents: assessment.weekly_share.map(|p| cents(p.micros())),
         progress_percent: assessment.progress.map(|p| p.basis_points() / 100),
-        wedge: assessment.wedge.map(wedge_name),
         multiplier: assessment.multiplier.map(multiplier),
         lower_bound: assessment.unpriced_responses > 0,
         mood: mood_name(assessment.mood),
@@ -107,17 +106,6 @@ pub(crate) fn multiplier(progress: Progress) -> String {
         format!("{}×", tenths / 10)
     } else {
         format!("{}.{}×", tenths / 10, tenths % 10)
-    }
-}
-
-/// The Wedge's name in the popover's JSON.
-pub(crate) fn wedge_name(wedge: Wedge) -> &'static str {
-    match wedge {
-        Wedge::Full => "full",
-        Wedge::TwoThirds => "twoThirds",
-        Wedge::OneThird => "oneThird",
-        Wedge::Crumbs => "crumbs",
-        Wedge::PaidOff => "paidOff",
     }
 }
 

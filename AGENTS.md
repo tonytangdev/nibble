@@ -24,6 +24,8 @@ The work is done when `pnpm check` passes. It runs the formatters, clippy, the t
 2. Start `pnpm dev` with `run_in_background`, then reply to the user straight away: the build is running and nibble will appear in the menu bar.
 3. Read the output when the background job notifies you or the user asks about it.
 
+To work on the popover's look without the Rust build, run `pnpm ui:dev` and open it in a browser. Outside Tauri it shows the sample Views in `ui/src/preview.ts`, picked with `?state=`, e.g. `http://localhost:5173/?state=paidOff`.
+
 ## Facts and licensing
 
 - Check plan prices and API rates against the provider's own pricing pages, and record the source URL and the date next to the data.

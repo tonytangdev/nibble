@@ -5,7 +5,6 @@ export interface View {
   valueCents: number;
   weeklyShareCents: number | null;
   progressPercent: number | null;
-  wedge: Wedge | null;
   multiplier: string | null;
   lowerBound: boolean;
   mood: Mood;
@@ -15,10 +14,10 @@ export interface View {
   unpricedResponses: number;
   prompts: { celebrate: boolean; askAutostart: boolean };
   notificationsOn: boolean;
+  autostartOn: boolean;
   error: string | null;
 }
 
-export type Wedge = "full" | "twoThirds" | "oneThird" | "crumbs" | "paidOff";
 export type Mood = "sleepy" | "nibbling" | "paidOff" | "stillHungry";
 
 export type Suggestion =
@@ -32,7 +31,6 @@ export const loading: View = {
   valueCents: 0,
   weeklyShareCents: null,
   progressPercent: null,
-  wedge: null,
   multiplier: null,
   lowerBound: false,
   mood: "nibbling",
@@ -42,5 +40,6 @@ export const loading: View = {
   unpricedResponses: 0,
   prompts: { celebrate: false, askAutostart: false },
   notificationsOn: true,
+  autostartOn: false,
   error: null,
 };
