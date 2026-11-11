@@ -1,0 +1,21 @@
+{
+  "name": "nibble",
+  "private": true,
+  "packageManager": "pnpm@12.18.0",
+  "scripts": {
+    "fmt": "cargo fmt --all && prettier --write .",
+    "fmt:check": "cargo fmt --all --check && prettier --check .",
+    "lint": "cargo clippy --workspace --all-targets --all-features -- -D warnings",
+    "test": "cargo test --workspace",
+    "deny": "cargo deny check",
+    "check": "pnpm fmt:check && pnpm lint && pnpm test && pnpm deny",
+    "prepare": "simple-git-hooks"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm fmt:check && pnpm lint"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10",
+    "simple-git-hooks": "^2.14.0"
+  }
+}

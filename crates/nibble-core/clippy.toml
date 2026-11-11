@@ -1,0 +1,23 @@
+# Copy of the root clippy.toml plus core-only bans. Keep the shared part in sync.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+allow-indexing-slicing-in-tests = true
+cognitive-complexity-threshold = 15
+too-many-lines-threshold = 60
+too-many-arguments-threshold = 5
+
+# Core is pure domain logic: IO and the wall clock enter through ports.
+disallowed-methods = [
+  { path = "std::time::SystemTime::now", reason = "inject time through a Clock port" },
+  { path = "std::time::Instant::now", reason = "inject time through a Clock port" },
+  { path = "std::env::var", reason = "configuration enters through a port" },
+  { path = "std::env::home_dir", reason = "paths belong in adapters" },
+]
+disallowed-types = [
+  { path = "std::fs::File", reason = "file IO belongs in nibble-adapters" },
+  { path = "std::path::Path", reason = "paths belong in nibble-adapters" },
+  { path = "std::path::PathBuf", reason = "paths belong in nibble-adapters" },
+  { path = "std::net::TcpStream", reason = "network IO belongs in nibble-adapters" },
+  { path = "std::process::Command", reason = "processes belong in nibble-adapters" },
+]

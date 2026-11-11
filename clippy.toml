@@ -1,0 +1,9 @@
+# Shared clippy settings. crates/nibble-core/clippy.toml overrides this file for core,
+# so keep the two in sync.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+allow-indexing-slicing-in-tests = true
+cognitive-complexity-threshold = 15
+too-many-lines-threshold = 60
+too-many-arguments-threshold = 5

@@ -1,0 +1,14 @@
+[package]
+name = "nibble-core"
+description = "Domain and ports: pricing, break-even and mood. No IO."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+# Keep this crate free of IO dependencies; see AGENTS.md.
+[dependencies]
+
+[lints]
+workspace = true
