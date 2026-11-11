@@ -18,5 +18,5 @@ fn main() {
     reason = "last resort when the app cannot start at all"
 )]
 fn report_fatal(error: &tauri::Error) {
-    eprintln!("nibble could not start: {error}");
+    eprintln!("Nibble could not start: {error}");
 }

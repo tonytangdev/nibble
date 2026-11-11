@@ -82,7 +82,7 @@ export function App() {
         >
           <GearIcon />
         </button>
-        <Mascot mood={view.mood} opens={replay} label={`nibble, ${view.mood}`} />
+        <Mascot mood={view.mood} opens={replay} label={`Nibble, ${view.mood}`} />
       </header>
       <section className="body">
         {view.status === "ready" ? <Reading view={view} opens={replay} /> : <Waiting view={view} />}
@@ -171,7 +171,7 @@ function Reading({ view, opens }: { view: View; opens: number }) {
       </div>
       {view.unpricedResponses > 0 && (
         <p className="note">
-          Plus {view.unpricedResponses} responses from models nibble can’t price yet.
+          Plus {view.unpricedResponses} responses from models Nibble can’t price yet.
         </p>
       )}
       {view.error && <p className="note error">{view.error}</p>}
@@ -311,8 +311,8 @@ function Celebration({
           ))}
         </div>
       )}
-      <Mascot mood="paidOff" opens={opens} label="nibble, celebrating" />
-      <h1>nibble ate the whole wedge!</h1>
+      <Mascot mood="paidOff" opens={opens} label="Nibble, celebrating" />
+      <h1>Nibble ate the whole wedge!</h1>
       <p className="lede">
         Today alone paid for your whole month of {view.plan ?? "your plan"}
         {view.multiplier ? `, ${view.multiplier} and counting` : ""}.
@@ -330,7 +330,7 @@ function AutostartPrompt() {
   };
   return (
     <aside className="callout">
-      <p>Keep nibble around? It can start when you log in.</p>
+      <p>Keep Nibble around? It can start when you log in.</p>
       <div className="actions">
         <button type="button" className="primary" onClick={answer(true)}>
           Start at login
@@ -351,7 +351,7 @@ function UpdatePrompt({ update }: { update: Update }) {
     case "available":
       return (
         <aside className="callout">
-          <p>A fresh nibble is ready: version {update.version}.</p>
+          <p>A fresh Nibble is ready: version {update.version}.</p>
           <div className="actions">
             <button type="button" className="primary" onClick={install}>
               Install & restart
@@ -362,7 +362,7 @@ function UpdatePrompt({ update }: { update: Update }) {
     case "installing":
       return (
         <aside className="callout" aria-live="polite">
-          <p>Installing the update. nibble will be right back.</p>
+          <p>Installing the update. Nibble will be right back.</p>
         </aside>
       );
     case "failed":
@@ -413,7 +413,7 @@ function Settings({ view, onClose }: { view: View; onClose: () => void }) {
         />
         <Switch
           label="Start at login"
-          hint="nibble waits quietly in the menu bar."
+          hint="Nibble waits quietly in the menu bar."
           on={autostart}
           onChange={(enable) => {
             setAutostart(enable);
@@ -422,7 +422,7 @@ function Settings({ view, onClose }: { view: View; onClose: () => void }) {
         />
         <Switch
           label="Check for updates"
-          hint="Once a day, nibble asks GitHub for a new version and tells you when one is out."
+          hint="Once a day, Nibble asks GitHub for a new version and tells you when one is out."
           on={updateChecks}
           onChange={(on) => {
             setUpdateChecks(on);
@@ -432,7 +432,7 @@ function Settings({ view, onClose }: { view: View; onClose: () => void }) {
         <UpdateRow view={view} />
       </section>
       <section className="about">
-        <h2>What nibble counts</h2>
+        <h2>What Nibble counts</h2>
         <p>
           Only Claude Code, read from its logs on this computer. Chats on claude.ai and in the
           desktop app leave no local record, so they are not included.
@@ -448,7 +448,7 @@ function Settings({ view, onClose }: { view: View; onClose: () => void }) {
             send({ name: "quit" });
           }}
         >
-          Quit nibble
+          Quit Nibble
         </button>
       </footer>
     </main>
@@ -469,7 +469,7 @@ function UpdateRow({ view }: { view: View }) {
   const install = () => {
     send({ name: "install_update" });
   };
-  const version = view.version ? `nibble ${view.version}` : "nibble";
+  const version = view.version ? `Nibble ${view.version}` : "Nibble";
   let hint = "Look for a new version now.";
   let action: ReactNode = (
     <button type="button" onClick={check}>
@@ -477,7 +477,7 @@ function UpdateRow({ view }: { view: View }) {
     </button>
   );
   if (view.update?.state === "installing") {
-    hint = "Installing the update. nibble will be right back.";
+    hint = "Installing the update. Nibble will be right back.";
     action = null;
   } else if (view.update?.state === "failed") {
     hint = "The update slipped away before it could settle in.";
@@ -494,16 +494,16 @@ function UpdateRow({ view }: { view: View }) {
       </button>
     );
   } else if (asked && view.update?.state === "available") {
-    hint = `A fresh nibble is ready: version ${view.update.version}.`;
+    hint = `A fresh Nibble is ready: version ${view.update.version}.`;
     action = (
       <button type="button" className="primary" onClick={install}>
         Install & restart
       </button>
     );
   } else if (asked && view.updateCheck === "upToDate") {
-    hint = "This is the newest nibble. All caught up.";
+    hint = "This is the newest Nibble. All caught up.";
   } else if (asked && view.updateCheck === "failed") {
-    hint = "nibble couldn’t reach GitHub. Try again in a bit.";
+    hint = "Nibble couldn’t reach GitHub. Try again in a bit.";
   }
   return (
     <div className="row" aria-live="polite">

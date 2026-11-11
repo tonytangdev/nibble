@@ -18,9 +18,9 @@ export function headline(view: View): string {
     case "paidOff":
       return `${plan} has paid for itself today`;
     case "sleepy":
-      return "nibble is getting sleepy";
+      return "Nibble is getting sleepy";
     case "stillHungry":
-      return "nibble is still hungry";
+      return "Nibble is still hungry";
   }
 }
 
@@ -55,14 +55,14 @@ export function waiting(status: View["status"]): { title: string; body: string }
     case "signedOut":
       return {
         title: "No Claude account yet",
-        body: "Sign in to Claude Code and nibble will start counting.",
+        body: "Sign in to Claude Code and Nibble will start counting.",
       };
     case "noUsage":
       return {
         title: "Nothing to nibble yet",
-        body: "Use Claude Code and nibble will start eating through your plan.",
+        body: "Use Claude Code and Nibble will start eating through your plan.",
       };
     default:
-      return { title: "Counting crumbs…", body: "nibble is reading Claude Code’s logs." };
+      return { title: "Counting crumbs…", body: "Nibble is reading Claude Code’s logs." };
   }
 }

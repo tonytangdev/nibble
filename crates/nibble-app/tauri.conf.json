@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "nibble",
+  "productName": "Nibble",
   "identifier": "dev.tonytang.nibble",
   "build": {
     "frontendDist": "../../ui/dist",
@@ -20,7 +20,7 @@
     "windows": [
       {
         "label": "popover",
-        "title": "nibble",
+        "title": "Nibble",
         "width": 340,
         "height": 480,
         "visible": false,

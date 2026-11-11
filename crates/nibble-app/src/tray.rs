@@ -67,12 +67,12 @@ pub(crate) fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<TrayIcon<R>
         .unwrap_or_else(|| Image::new_owned(vec![0; FRAME_BYTES], SIDE, SIDE));
     let animator = app.clone();
     thread::spawn(move || animate(&animator, &frames));
-    let quit = MenuItem::with_id(app, "quit", "Quit nibble", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit Nibble", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&quit])?;
     TrayIconBuilder::with_id(ID)
         .icon(first)
         .icon_as_template(true)
-        .tooltip("nibble")
+        .tooltip("Nibble")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|handle, event| {
@@ -164,8 +164,8 @@ pub(crate) fn show<R: Runtime>(app: &AppHandle<R>, combined: &Combined) -> tauri
         .multiplier
         .map(|m| format!("{bound}{}", view::multiplier(m)));
     let tooltip = label.as_ref().map_or_else(
-        || "nibble: eating through your plan".to_owned(),
-        |m| format!("nibble: paid off, {m}"),
+        || "Nibble: eating through your plan".to_owned(),
+        |m| format!("Nibble: paid off, {m}"),
     );
     if let Ok(mut goal) = app.state::<Animation>().0.lock() {
         goal.frame = Some(frame_of(combined.wedge));

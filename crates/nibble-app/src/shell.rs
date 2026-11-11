@@ -277,7 +277,7 @@ fn notify_paid_off<R: Runtime>(app: &AppHandle<R>, shell: &mut Shell, view: &Vie
         let _shown = app
             .notification()
             .builder()
-            .title("nibble ate the whole wedge")
+            .title("Nibble ate the whole wedge")
             .body(format!("Today alone paid for your whole month of {plan}."))
             .show();
     }
@@ -364,9 +364,9 @@ fn notify_new_version<R: Runtime>(app: &AppHandle<R>, version: &str) {
     let _shown = app
         .notification()
         .builder()
-        .title("nibble grew a new tooth")
+        .title("Nibble grew a new tooth")
         .body(format!(
-            "Version {version} is ready to install. Click to open nibble."
+            "Version {version} is ready to install. Click to open Nibble."
         ))
         .show();
 }
