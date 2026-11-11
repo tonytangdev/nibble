@@ -75,12 +75,20 @@ pub(crate) fn run() -> tauri::Result<()> {
 
 fn new_shell<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Shell> {
     let paths = app.path();
-    let settings_path = paths.app_config_dir()?.join("settings.json");
+    // NIBBLE_DATA_DIR keeps settings and history elsewhere, e.g. for demo data.
+    let data_dir = std::env::var_os("NIBBLE_DATA_DIR").map(PathBuf::from);
+    let settings_path = match &data_dir {
+        Some(dir) => dir.clone(),
+        None => paths.app_config_dir()?,
+    }
+    .join("settings.json");
+    let history_path = match data_dir {
+        Some(dir) => dir,
+        None => paths.app_data_dir()?,
+    }
+    .join("history.json");
     Ok(Shell {
-        source: ClaudeCode::installed(
-            &paths.home_dir()?,
-            paths.app_data_dir()?.join("history.json"),
-        ),
+        source: ClaudeCode::installed(&paths.home_dir()?, history_path),
         settings: Settings::load(&settings_path),
         settings_path,
         view: View::default(),
