@@ -190,6 +190,7 @@ fn refresh<R: Runtime>(app: &AppHandle<R>) {
     view.update = shell.pending.as_ref().map(Pending::view).filter(|update| {
         view.switches.update_checks || !matches!(update, UpdateView::Available { .. })
     });
+    tray::badge(app, view.update.is_some());
     shell.view = view.clone();
     drop(shell);
     let _sent = app.emit(VIEW_EVENT, view);
