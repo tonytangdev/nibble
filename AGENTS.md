@@ -2,16 +2,6 @@
 
 A menu bar app (macOS first, Windows and Linux too) that prices a developer's AI usage at API rates and compares it to what their subscription costs each month. `design/HANDOFF.md` holds the product decisions, the mascot, the brand rules and the open questions. Read it before any product or UI work.
 
-## The human is a TypeScript developer learning Rust
-
-After any change to Rust code, end your reply with a **From TypeScript** section that explains the change in their terms:
-
-- **Flow**: how data moves through the changed code from start to end, naming the files.
-- **Concepts**: map each Rust concept the diff uses to its closest TypeScript equivalent. For example, `trait` is like `interface`, `Result<T, E>` is like a `{ ok: true; value } | { ok: false; error }` union, an `enum` with data is like a discriminated union, a crate is like a package, and `?` is like an early `return` of the error. When the comparison breaks down (ownership, borrowing, lifetimes, `Send`/`Sync`), say so and explain the Rust idea on its own terms.
-- **Why**: name the lint, architecture rule or compiler constraint that shaped the code.
-
-The section is done when every Rust concept in the diff that this conversation hasn't covered yet is either mapped to TypeScript or flagged as having no equivalent. The code itself stays idiomatic Rust. The TypeScript framing goes in the reply, not in code comments.
-
 ## Architecture: hexagonal
 
 Dependencies point inward. The crate boundaries enforce this, so the compiler rejects an import that goes the wrong way.
