@@ -81,6 +81,11 @@ impl Pending {
 /// The shell, shared between the refresh thread and command handlers.
 struct AppState(Mutex<Shell>);
 
+/// Held for a whole refresh, so refreshes take turns. It is held while the tray waits on
+/// the main thread, so never call [`refresh`] from the main thread: use [`refresh_soon`].
+#[derive(Default)]
+struct Refreshing(Mutex<()>);
+
 /// Starts the app.
 pub(crate) fn run() -> tauri::Result<()> {
     tauri::Builder::default()
@@ -97,6 +102,7 @@ pub(crate) fn run() -> tauri::Result<()> {
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             let handle = app.handle().clone();
             app.manage(AppState(Mutex::new(new_shell(&handle)?)));
+            app.manage(Refreshing::default());
             tray::build(&handle)?;
             // A click on any of nibble's notifications opens the popover.
             let opener = handle.clone();
@@ -176,25 +182,39 @@ pub(crate) fn refresh_soon<R: Runtime>(app: &AppHandle<R>) {
 }
 
 /// Rereads everything, reassesses, and pushes the result to the tray and popover.
+///
+/// The shell lock is never held while touching the tray, notifications or the webview:
+/// those wait on the main thread, and the main thread takes the shell lock to answer the
+/// popover, so holding it there deadlocks the app.
 fn refresh<R: Runtime>(app: &AppHandle<R>) {
+    // One refresh at a time, so an older one never draws over a newer one. The main
+    // thread never takes this lock.
+    let refreshing = app.state::<Refreshing>();
+    let Ok(_turn) = refreshing.0.lock() else {
+        return;
+    };
+    let autostart = app.autolaunch().is_enabled().unwrap_or(false);
     let state = app.state::<AppState>();
     let Ok(mut shell) = state.0.lock() else {
         return;
     };
-    let mut view = match reassess(&mut shell) {
+    let (mut view, combined, paid_off_plan) = match reassess(&mut shell) {
         Ok((view, combined)) => {
-            let _drawn = combined.map(|combined| tray::show(app, &combined));
-            notify_paid_off(app, &mut shell, &view);
-            view
+            let plan = mark_paid_off(&mut shell, &view);
+            (view, combined, plan)
         }
-        Err(error) => View {
-            error: Some(error.message),
-            ..shell.view.clone()
-        },
+        Err(error) => (
+            View {
+                error: Some(error.message),
+                ..shell.view.clone()
+            },
+            None,
+            None,
+        ),
     };
     view.switches = Switches {
         notifications: !shell.settings.notifications_off,
-        autostart: app.autolaunch().is_enabled().unwrap_or(false),
+        autostart,
         update_checks: !shell.settings.update_checks_off,
     };
     // With checks off, a found version stops nagging unless the user asked for it, but an
@@ -206,9 +226,16 @@ fn refresh<R: Runtime>(app: &AppHandle<R>) {
     });
     view.update_check = shell.asked_check;
     view.version = app.package_info().version.to_string();
-    tray::badge(app, view.update.is_some());
     shell.view = view.clone();
     drop(shell);
+
+    if let Some(combined) = combined {
+        let _drawn = tray::show(app, &combined);
+    }
+    tray::badge(app, view.update.is_some());
+    if let Some(plan) = paid_off_plan {
+        notify_paid_off(app, &plan);
+    }
     let _sent = app.emit(VIEW_EVENT, view);
 }
 
@@ -267,22 +294,16 @@ fn local_midnight(date: NaiveDate) -> Option<DateTime<Utc>> {
         .map(|start| start.with_timezone(&Utc))
 }
 
-/// Sends the Paid off notification once a Day.
-fn notify_paid_off<R: Runtime>(app: &AppHandle<R>, shell: &mut Shell, view: &View) {
+/// Marks today's Paid off notification as sent, once a Day, and saves that. Returns the
+/// Plan's name to notify about, or `None` when nothing should show: not paid off yet,
+/// already sent today, or notifications are off.
+fn mark_paid_off(shell: &mut Shell, view: &View) -> Option<String> {
     if view.multiplier.is_none() || shell.settings.notified_day == shell.day {
-        return;
-    }
-    if !shell.settings.notifications_off {
-        let plan = view.plan.clone().unwrap_or_else(|| "plan".into());
-        let _shown = app
-            .notification()
-            .builder()
-            .title("Nibble ate the whole wedge")
-            .body(format!("Today alone paid for your whole month of {plan}."))
-            .show();
+        return None;
     }
     shell.settings.notified_day = shell.day;
     save(shell);
+    (!shell.settings.notifications_off).then(|| view.plan.clone().unwrap_or_else(|| "plan".into()))
 }
 
 /// Asks GitHub for a newer version: if a check is due, or right away when the user asked
@@ -338,26 +359,40 @@ fn check_for_update<R: Runtime>(app: &AppHandle<R>, asked: bool) {
             CheckView::UpToDate
         });
     }
-    if let Some(update) = &found {
-        // The user who asked is looking at the answer already; a notification would echo it.
-        notify_update(app, &mut shell, &update.version, !asked);
-    }
+    // Marked even when the user asked: they are looking at the answer already, and a
+    // notification would echo it.
+    let new_version = match &found {
+        Some(update) if mark_announced(&mut shell, &update.version) && !asked => {
+            Some(update.version.clone())
+        }
+        _ => None,
+    };
     shell.pending = found.map(Pending::found);
     drop(shell);
+    if let Some(version) = new_version {
+        notify_new_version(app, &version);
+    }
     refresh_soon(app);
 }
 
-/// Sends the update notification once per version. With `show` false, only marks the
-/// version as announced, so a later check stays quiet about it.
-fn notify_update<R: Runtime>(app: &AppHandle<R>, shell: &mut Shell, version: &str, show: bool) {
+/// Marks `version` as announced and saves that, returning whether it was new. A version
+/// marked here stays quiet at later checks, even when this one shows no notification.
+fn mark_announced(shell: &mut Shell, version: &str) -> bool {
     if !updates::announce(version, shell.settings.announced_version.as_deref()) {
-        return;
-    }
-    if show {
-        notify_new_version(app, version);
+        return false;
     }
     shell.settings.announced_version = Some(version.to_owned());
     save(shell);
+    true
+}
+
+fn notify_paid_off<R: Runtime>(app: &AppHandle<R>, plan: &str) {
+    let _shown = app
+        .notification()
+        .builder()
+        .title("Nibble ate the whole wedge")
+        .body(format!("Today alone paid for your whole month of {plan}."))
+        .show();
 }
 
 fn notify_new_version<R: Runtime>(app: &AppHandle<R>, version: &str) {
@@ -417,6 +452,9 @@ fn update<R: Runtime>(
 }
 
 /// What the popover can ask of the shell.
+///
+/// Commands that take the shell lock run off the main thread (`async`): a refresh holding
+/// the lock may be waiting on the main thread, so the main thread must never wait for it.
 mod commands {
     #![expect(
         clippy::needless_pass_by_value,
@@ -429,7 +467,7 @@ mod commands {
 
     use super::{AppState, StoredDismissal, View, update};
 
-    #[tauri::command]
+    #[tauri::command(async)]
     pub(super) fn get_view(state: State<'_, AppState>) -> View {
         state
             .0
@@ -438,7 +476,7 @@ mod commands {
             .unwrap_or_default()
     }
 
-    #[tauri::command]
+    #[tauri::command(async)]
     pub(super) fn dismiss<R: Runtime>(app: AppHandle<R>, state: State<'_, AppState>) {
         update(&app, &state, |shell| {
             if let Some(subscription) = shell.subscription.clone() {
@@ -450,14 +488,14 @@ mod commands {
         });
     }
 
-    #[tauri::command]
+    #[tauri::command(async)]
     pub(super) fn celebrated<R: Runtime>(app: AppHandle<R>, state: State<'_, AppState>) {
         update(&app, &state, |shell| {
             shell.settings.celebrated_day = shell.day;
         });
     }
 
-    #[tauri::command]
+    #[tauri::command(async)]
     pub(super) fn answer_autostart<R: Runtime>(
         app: AppHandle<R>,
         state: State<'_, AppState>,
@@ -474,7 +512,7 @@ mod commands {
         });
     }
 
-    #[tauri::command]
+    #[tauri::command(async)]
     pub(super) fn set_notifications<R: Runtime>(
         app: AppHandle<R>,
         state: State<'_, AppState>,
@@ -485,7 +523,7 @@ mod commands {
         });
     }
 
-    #[tauri::command]
+    #[tauri::command(async)]
     pub(super) fn set_update_checks<R: Runtime>(
         app: AppHandle<R>,
         state: State<'_, AppState>,
