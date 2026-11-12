@@ -15,6 +15,7 @@ use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, Runtime, WebviewWindow};
+#[cfg(not(target_os = "macos"))]
 use tauri_plugin_positioner::{Position, WindowExt};
 
 use crate::view;
@@ -60,6 +61,10 @@ struct Animation(Mutex<Goal>);
 pub(crate) fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<TrayIcon<R>> {
     app.manage(Animation::default());
     app.manage(Blurred::default());
+    #[cfg(target_os = "macos")]
+    if let Some(window) = app.get_webview_window(POPOVER) {
+        untile(&window)?;
+    }
     let frames = frames()?;
     let first = frames
         .first()
@@ -112,6 +117,30 @@ fn toggle_popover<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
+/// Keeps tiling window managers from tiling the popover or giving it a workspace. They
+/// manage only windows whose accessibility subrole is a standard window, a dialog or a
+/// floating window, so the popover reports an unknown subrole, as other menu bar apps'
+/// panels do. Call it on the main thread.
+// AeroSpace's rule is `isWindowHeuristic` in its `AxUiElementMockEx.swift`.
+#[cfg(target_os = "macos")]
+#[expect(
+    unsafe_code,
+    reason = "Tauri has no API for a window's accessibility subrole, so this calls AppKit"
+)]
+fn untile<R: Runtime>(window: &WebviewWindow<R>) -> tauri::Result<()> {
+    use objc2_app_kit::{NSAccessibility, NSAccessibilityUnknownSubrole, NSWindow};
+    let pointer = window.ns_window()?.cast::<NSWindow>();
+    // SAFETY: `ns_window` points at the popover's live `NSWindow`, which the app keeps for
+    // its whole run, and the caller is on the main thread, where AppKit must be used. The
+    // subrole is an immutable AppKit constant.
+    unsafe {
+        if let Some(ns_window) = pointer.as_ref() {
+            ns_window.setAccessibilitySubrole(Some(NSAccessibilityUnknownSubrole));
+        }
+    }
+    Ok(())
+}
+
 /// Hides the popover when it loses focus, noting when, so the click that took the focus
 /// does not open it again.
 pub(crate) fn hide_on_blur<R: Runtime>(window: &tauri::Window<R>) {
@@ -147,10 +176,91 @@ pub(crate) fn open_popover<R: Runtime>(app: &AppHandle<R>) {
 }
 
 fn show_popover<R: Runtime>(app: &AppHandle<R>, window: &WebviewWindow<R>) {
+    #[cfg(target_os = "macos")]
+    let _moved = place_under_icon(app, window);
+    #[cfg(not(target_os = "macos"))]
     let _moved = window.move_window(Position::TrayBottomCenter);
     let _shown = window.show();
     let _focused = window.set_focus();
     crate::shell::refresh_soon(app);
+}
+
+/// Hangs the popover centred under the icon, on whichever screen the icon is.
+///
+/// The positioner plugin turns the icon's pixels into points at the popover's current
+/// scale, which puts the popover in the wrong place when the icon is on a screen of another
+/// scale. macOS places windows in points on every screen, so this converts at the icon's
+/// own screen's scale instead.
+#[cfg(target_os = "macos")]
+fn place_under_icon<R: Runtime>(app: &AppHandle<R>, window: &WebviewWindow<R>) -> Option<()> {
+    let rect = app.tray_by_id(ID)?.rect().ok()??;
+    // On macOS the icon's rect is always in pixels, so this scale changes nothing.
+    let position = rect.position.to_physical::<f64>(1.0);
+    let size = rect.size.to_physical::<f64>(1.0);
+    let icon = Icon {
+        x: position.x,
+        y: position.y,
+        width: size.width,
+        height: size.height,
+    };
+    let screens: Vec<Screen> = window
+        .available_monitors()
+        .ok()?
+        .iter()
+        .map(|monitor| Screen {
+            x: f64::from(monitor.position().x),
+            y: f64::from(monitor.position().y),
+            width: f64::from(monitor.size().width),
+            height: f64::from(monitor.size().height),
+            scale: monitor.scale_factor(),
+        })
+        .collect();
+    let width = window
+        .outer_size()
+        .ok()?
+        .to_logical::<f64>(window.scale_factor().ok()?)
+        .width;
+    let (x, y) = under_icon(icon, width, &screens)?;
+    window.set_position(tauri::LogicalPosition::new(x, y)).ok()
+}
+
+/// The icon's top-left corner and size, in pixels of the screen it is on.
+#[cfg(any(target_os = "macos", test))]
+#[derive(Clone, Copy)]
+struct Icon {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+}
+
+/// A screen's frame in its own pixels, and how many pixels make a point on it.
+#[cfg(any(target_os = "macos", test))]
+struct Screen {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    scale: f64,
+}
+
+/// Where the popover's top-left corner goes, in points, to hang a popover `width` points
+/// wide centred under `icon`. `None` when the icon is on none of `screens`.
+///
+/// The icon's screen is the one holding its centre: its rect can start a few pixels above
+/// the top of a screen.
+#[cfg(any(target_os = "macos", test))]
+fn under_icon(icon: Icon, width: f64, screens: &[Screen]) -> Option<(f64, f64)> {
+    let (centre_x, centre_y) = (icon.x + icon.width / 2.0, icon.y + icon.height / 2.0);
+    let screen = screens.iter().find(|screen| {
+        (screen.x..screen.x + screen.width).contains(&centre_x)
+            && (screen.y..screen.y + screen.height).contains(&centre_y)
+    })?;
+    let scale = screen.scale;
+    Some((
+        (icon.x + icon.width / 2.0) / scale - width / 2.0,
+        (icon.y + icon.height) / scale,
+    ))
 }
 
 /// Points the icon at the combined verdict: the animator glides to the new Wedge, then
@@ -337,7 +447,71 @@ fn with_dot(frame: &[u8]) -> Vec<u8> {
 mod tests {
     use std::time::{Duration, Instant};
 
-    use super::closed_by;
+    use super::{Icon, Screen, closed_by, under_icon};
+
+    /// A 2x laptop screen, 1512 by 982 points, with a 1x screen 2560 by 1440 above it.
+    fn screens() -> [Screen; 2] {
+        [
+            Screen {
+                x: 0.0,
+                y: 0.0,
+                width: 3024.0,
+                height: 1964.0,
+                scale: 2.0,
+            },
+            Screen {
+                x: -549.0,
+                y: -1440.0,
+                width: 2560.0,
+                height: 1440.0,
+                scale: 1.0,
+            },
+        ]
+    }
+
+    #[test]
+    fn the_popover_hangs_centred_under_an_icon_on_a_retina_screen() {
+        let icon = Icon {
+            x: 1800.0,
+            y: 0.0,
+            width: 80.0,
+            height: 66.0,
+        };
+        assert_eq!(under_icon(icon, 340.0, &screens()), Some((750.0, 33.0)));
+    }
+
+    #[test]
+    fn an_icon_on_a_screen_of_another_scale_keeps_its_own_scale() {
+        let icon = Icon {
+            x: 1200.0,
+            y: -1440.0,
+            width: 40.0,
+            height: 30.0,
+        };
+        assert_eq!(under_icon(icon, 340.0, &screens()), Some((1050.0, -1410.0)));
+    }
+
+    #[test]
+    fn an_icon_that_starts_just_above_its_screen_is_still_on_it() {
+        let icon = Icon {
+            x: 1414.0,
+            y: -1442.0,
+            width: 34.0,
+            height: 33.0,
+        };
+        assert_eq!(under_icon(icon, 340.0, &screens()), Some((1261.0, -1409.0)));
+    }
+
+    #[test]
+    fn an_icon_on_no_known_screen_places_nothing() {
+        let icon = Icon {
+            x: 9000.0,
+            y: 0.0,
+            width: 40.0,
+            height: 30.0,
+        };
+        assert_eq!(under_icon(icon, 340.0, &screens()), None);
+    }
 
     #[test]
     fn a_click_right_after_the_popover_hid_itself_only_closes_it() {
