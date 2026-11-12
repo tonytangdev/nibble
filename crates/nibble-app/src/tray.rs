@@ -225,6 +225,7 @@ fn place_under_icon<R: Runtime>(app: &AppHandle<R>, window: &WebviewWindow<R>) -
 }
 
 /// The icon's top-left corner and size, in pixels of the screen it is on.
+#[cfg(any(target_os = "macos", test))]
 #[derive(Clone, Copy)]
 struct Icon {
     x: f64,
@@ -234,6 +235,7 @@ struct Icon {
 }
 
 /// A screen's frame in its own pixels, and how many pixels make a point on it.
+#[cfg(any(target_os = "macos", test))]
 struct Screen {
     x: f64,
     y: f64,
@@ -247,6 +249,7 @@ struct Screen {
 ///
 /// The icon's screen is the one holding its centre: its rect can start a few pixels above
 /// the top of a screen.
+#[cfg(any(target_os = "macos", test))]
 fn under_icon(icon: Icon, width: f64, screens: &[Screen]) -> Option<(f64, f64)> {
     let (centre_x, centre_y) = (icon.x + icon.width / 2.0, icon.y + icon.height / 2.0);
     let screen = screens.iter().find(|screen| {
