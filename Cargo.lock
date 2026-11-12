@@ -2331,6 +2331,7 @@ dependencies = [
  "chrono",
  "nibble-adapters",
  "nibble-core",
+ "objc2-app-kit",
  "serde",
  "serde_json",
  "tauri",
